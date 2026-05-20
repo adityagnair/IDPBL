@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Building Navigation System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏢 Building Navigation System</h1>
+            <p>Find the shortest path between any two locations</p>
+        </header>
+
+        <div class="content">
+            <!-- Control Panel -->
+            <div class="control-panel">
+                <div class="search-section">
+                    <div class="input-group">
+                        <label for="startLocation">Start Location:</label>
+                        <select id="startLocation">
+                            <option value="">Select starting point...</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="endLocation">End Location:</label>
+                        <select id="endLocation">
+                            <option value="">Select destination...</option>
+                        </select>
+                    </div>
+
+                    <button id="findPathBtn" class="btn btn-primary">Find Shortest Path</button>
+                    <button id="clearBtn" class="btn btn-secondary">Clear</button>
+                </div>
+
+                <!-- Path Information -->
+                <div id="pathInfo" class="path-info hidden">
+                    <h3>Path Details</h3>
+                    <div id="pathSteps" class="path-steps"></div>
+                    <div id="pathStats" class="path-stats"></div>
+                </div>
+
+                <!-- Error Message -->
+                <div id="errorMsg" class="error-msg hidden"></div>
+            </div>
+
+            <!-- Floor Plan Viewer -->
+            <div class="floor-plan-container">
+                <div class="floor-selector">
+                    <button class="floor-btn active" data-floor="1">Floor 1</button>
+                    <button class="floor-btn" data-floor="2">Floor 2</button>
+                    <button class="floor-btn" data-floor="3">Floor 3</button>
+                    <button class="floor-btn" data-floor="4">Floor 4</button>
+                    <button class="floor-btn" data-floor="5">Floor 5</button>
+                </div>
+
+                <div class="floor-viewer">
+                    <img id="floorImage" src="floor1.jpeg" alt="Floor Plan">
+                    <canvas id="pathCanvas" class="path-canvas"></canvas>
+                    <div id="roomLabels" class="room-labels"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="buildingData.js"></script>
+    <script src="pathfinding.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
