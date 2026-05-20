@@ -14,10 +14,71 @@ class NavigationApp {
         this.imageLoaded = false;
         this.imageWrapper = null;
 
+        // Check dependencies first
+        if (!this.checkDependencies()) {
+            console.error('❌ Dependencies not loaded, aborting initialization');
+            return;
+        }
+
         this.initElements();
-        this.setupEventListeners();
+        if (!this.validateElements()) {
+            console.error('❌ DOM elements not found, aborting initialization');
+            return;
+        }
+
         this.populateDropdowns();
+        this.setupEventListeners();
         this.setupCanvas();
+    }
+
+    /**
+     * Check if all required dependencies are loaded
+     */
+    checkDependencies() {
+        const checks = {
+            'getRoomsAsArray': typeof getRoomsAsArray === 'function',
+            'getAllRooms': typeof getAllRooms === 'function',
+            'getRoom': typeof getRoom === 'function',
+            'pathfinder': typeof pathfinder !== 'undefined'
+        };
+
+        let allGood = true;
+        for (const [name, loaded] of Object.entries(checks)) {
+            if (!loaded) {
+                console.error(`❌ ${name} not available`);
+                allGood = false;
+            }
+        }
+
+        if (allGood) {
+            console.log('✅ All dependencies loaded');
+        }
+        return allGood;
+    }
+
+    /**
+     * Validate all required DOM elements exist
+     */
+    validateElements() {
+        const requiredIds = [
+            'startLocation', 'endLocation', 'findPathBtn', 'clearBtn',
+            'floorImage', 'pathCanvas', 'roomLabels', 'pathInfo',
+            'pathSteps', 'pathStats', 'errorMsg'
+        ];
+
+        let allFound = true;
+        for (const id of requiredIds) {
+            const el = document.getElementById(id);
+            if (!el) {
+                console.error(`❌ Element not found: #${id}`);
+                allFound = false;
+            }
+        }
+
+        if (allFound) {
+            console.log('✅ All DOM elements found');
+        }
+        return allFound;
     }
 
     /**
@@ -43,6 +104,8 @@ class NavigationApp {
         this.canvas = this.elements.pathCanvas;
         this.ctx = this.canvas.getContext('2d');
         this.imageWrapper = this.elements.imageWrapper;
+
+        console.log('✅ DOM elements initialized');
     }
 
     /**
@@ -51,13 +114,13 @@ class NavigationApp {
     setupCanvas() {
         this.floorImage = new Image();
         this.floorImage.onload = () => {
-            console.log('Image loaded:', this.floorImage.width, 'x', this.floorImage.height);
+            console.log('✅ Image loaded:', this.floorImage.width, 'x', this.floorImage.height);
             this.imageLoaded = true;
             this.resizeCanvas();
             this.drawCurrentFloor();
         };
         this.floorImage.onerror = () => {
-            console.error('Failed to load image:', this.floorImage.src);
+            console.error('❌ Failed to load image:', this.floorImage.src);
         };
         this.loadFloorImage(this.currentFloor);
 
@@ -85,8 +148,6 @@ class NavigationApp {
         const displayWidth = this.elements.floorImage.offsetWidth;
         const displayHeight = this.elements.floorImage.offsetHeight;
         
-        console.log('Resizing canvas:', displayWidth, 'x', displayHeight);
-        
         // Set canvas to match displayed image size
         this.canvas.width = displayWidth;
         this.canvas.height = displayHeight;
@@ -105,25 +166,31 @@ class NavigationApp {
      * Setup event listeners
      */
     setupEventListeners() {
-        console.log('Setting up event listeners');
+        console.log('✅ Setting up event listeners');
         
-        this.elements.findPathBtn.addEventListener('click', (e) => {
-            console.log('Find Path button clicked');
-            e.preventDefault();
-            this.findPath();
-        });
+        // Find Path button
+        if (this.elements.findPathBtn) {
+            this.elements.findPathBtn.addEventListener('click', (e) => {
+                console.log('🔍 Find Path button clicked');
+                e.preventDefault();
+                this.findPath();
+            });
+        }
         
-        this.elements.clearBtn.addEventListener('click', (e) => {
-            console.log('Clear button clicked');
-            e.preventDefault();
-            this.clearPath();
-        });
+        // Clear button
+        if (this.elements.clearBtn) {
+            this.elements.clearBtn.addEventListener('click', (e) => {
+                console.log('🗑️ Clear button clicked');
+                e.preventDefault();
+                this.clearPath();
+            });
+        }
         
         // Floor buttons
         this.elements.floorButtons.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const floorNum = parseInt(e.target.dataset.floor);
-                console.log('Switching to floor:', floorNum);
+                console.log('🏢 Switching to floor:', floorNum);
                 this.switchFloor(floorNum);
             });
         });
@@ -140,27 +207,47 @@ class NavigationApp {
      * Populate dropdown selects with all rooms
      */
     populateDropdowns() {
-        const rooms = getRoomsAsArray();
-        console.log('Populating dropdowns with', rooms.length, 'rooms');
-        
-        rooms.forEach(room => {
-            const optionStart = document.createElement('option');
-            optionStart.value = room;
-            optionStart.textContent = room;
-            this.elements.startLocation.appendChild(optionStart);
+        try {
+            const rooms = getRoomsAsArray();
+            console.log('📋 Populating dropdowns with', rooms.length, 'rooms');
+            
+            if (rooms.length === 0) {
+                console.error('❌ No rooms found');
+                return;
+            }
 
-            const optionEnd = document.createElement('option');
-            optionEnd.value = room;
-            optionEnd.textContent = room;
-            this.elements.endLocation.appendChild(optionEnd);
-        });
+            // Clear existing options (except the default one)
+            while (this.elements.startLocation.options.length > 1) {
+                this.elements.startLocation.remove(1);
+            }
+            while (this.elements.endLocation.options.length > 1) {
+                this.elements.endLocation.remove(1);
+            }
+
+            // Add rooms to dropdowns
+            rooms.forEach(room => {
+                const optionStart = document.createElement('option');
+                optionStart.value = room;
+                optionStart.textContent = room;
+                this.elements.startLocation.appendChild(optionStart);
+
+                const optionEnd = document.createElement('option');
+                optionEnd.value = room;
+                optionEnd.textContent = room;
+                this.elements.endLocation.appendChild(optionEnd);
+            });
+
+            console.log('✅ Dropdowns populated successfully');
+        } catch (error) {
+            console.error('❌ Error populating dropdowns:', error);
+        }
     }
 
     /**
      * Switch floor display
      */
     switchFloor(floorNumber) {
-        console.log('Switching floor to:', floorNumber);
+        console.log('🏢 Switching floor to:', floorNumber);
         this.currentFloor = floorNumber;
         
         // Update active button
@@ -194,41 +281,42 @@ class NavigationApp {
         const start = this.elements.startLocation.value;
         const end = this.elements.endLocation.value;
 
-        console.log('Finding path from "' + start + '" to "' + end + '"');
+        console.log('🔍 Finding path from "' + start + '" to "' + end + '"');
 
         // Validation
         if (!start || !end) {
             this.showError('Please select both start and end locations');
-            console.log('Validation failed: start or end is empty');
+            console.warn('⚠️ Validation failed: start or end is empty');
             return;
         }
 
         if (start === end) {
             this.showError('Start and end locations must be different');
+            console.warn('⚠️ Start and end are the same');
             return;
         }
 
         // Check if pathfinder exists
-        if (!pathfinder) {
+        if (typeof pathfinder === 'undefined') {
             this.showError('Navigation system not initialized. Please refresh the page.');
-            console.error('Pathfinder is not defined');
+            console.error('❌ Pathfinder is not defined');
             return;
         }
 
         // Find path
         const result = pathfinder.findShortestPath(start, end);
-        console.log('Pathfinding result:', result);
+        console.log('📍 Pathfinding result:', result);
 
         if (!result) {
             this.showError('No path found between selected locations');
-            console.error('No path found between', start, 'and', end);
+            console.error('❌ No path found between', start, 'and', end);
             return;
         }
 
         this.currentPath = result;
         this.currentPathDetails = pathfinder.getPathDetails(result);
         
-        console.log('Path details:', this.currentPathDetails);
+        console.log('✅ Path found. Details:', this.currentPathDetails);
         
         this.hideError();
         this.displayPathInfo();
@@ -280,10 +368,10 @@ class NavigationApp {
      * Draw path on canvas
      */
     drawPath() {
-        console.log('Drawing path on canvas');
+        console.log('🎨 Drawing path on canvas');
         
         if (!this.currentPath || !this.imageLoaded) {
-            console.log('Cannot draw: path=' + !!this.currentPath + ', imageLoaded=' + this.imageLoaded);
+            console.log('⚠️ Cannot draw: path=' + !!this.currentPath + ', imageLoaded=' + this.imageLoaded);
             return;
         }
 
@@ -309,10 +397,10 @@ class NavigationApp {
             }
         }
 
-        console.log('Current floor rooms:', currentFloorRooms.length);
+        console.log('📍 Current floor rooms:', currentFloorRooms.length);
 
         if (currentFloorRooms.length === 0) {
-            console.log('No rooms on current floor in path');
+            console.log('ℹ️ No rooms on current floor in path');
             return;
         }
 
@@ -335,8 +423,6 @@ class NavigationApp {
                 const y1 = room1.y * scaleY;
                 const x2 = room2.x * scaleX;
                 const y2 = room2.y * scaleY;
-
-                console.log(`Drawing line from (${x1}, ${y1}) to (${x2}, ${y2})`);
 
                 this.ctx.beginPath();
                 this.ctx.moveTo(x1, y1);
@@ -370,7 +456,7 @@ class NavigationApp {
             this.ctx.stroke();
         });
 
-        console.log('Path drawn successfully');
+        console.log('✅ Path drawn successfully');
         this.displayRoomLabels();
     }
 
@@ -436,7 +522,7 @@ class NavigationApp {
      * Show error message
      */
     showError(message) {
-        console.error('Error:', message);
+        console.error('❌ Error:', message);
         this.elements.errorMsg.textContent = message;
         this.elements.errorMsg.classList.remove('hidden');
     }
@@ -462,25 +548,18 @@ class NavigationApp {
 
 // Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('=== DOM Content Loaded ===' );
-    console.log('Checking dependencies...');
+    console.log('\n========== DOM Content Loaded ==========');
     
-    // Check if required functions exist
-    if (typeof getRoomsAsArray !== 'function') {
-        console.error('❌ getRoomsAsArray not found');
-        return;
-    }
-    
-    if (typeof pathfinder === 'undefined') {
-        console.error('❌ Pathfinder not initialized');
-        return;
-    }
-    
-    console.log('✅ All dependencies loaded');
-    
-    const app = new NavigationApp();
-    window.navigationApp = app;
-    
-    console.log('🏢 Building Navigation System initialized');
-    console.log('Total rooms:', Object.keys(getAllRooms()).length);
+    // Add a small delay to ensure all scripts are loaded
+    setTimeout(() => {
+        const app = new NavigationApp();
+        if (app && app.elements && app.elements.startLocation) {
+            window.navigationApp = app;
+            console.log('\n✅ Building Navigation System Ready!');
+            console.log('Total rooms:', Object.keys(getAllRooms()).length);
+            console.log('========================================\n');
+        } else {
+            console.error('❌ Failed to initialize navigation app');
+        }
+    }, 100);
 });
