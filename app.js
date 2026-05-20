@@ -52,16 +52,24 @@ class NavigationApp {
             this.resizeCanvas();
             this.drawCurrentFloor();
         };
-        this.floorImage.src = `floor${this.currentFloor}.jpeg`;
+        this.loadFloorImage(this.currentFloor);
 
         window.addEventListener('resize', () => this.resizeCanvas());
+    }
+
+    /**
+     * Load floor image
+     */
+    loadFloorImage(floorNumber) {
+        this.floorImage.src = `floor${floorNumber}.jpeg`;
     }
 
     /**
      * Resize canvas to match image size
      */
     resizeCanvas() {
-        const floorViewer = this.elements.floorImage.parentElement;
+        if (!this.elements.floorImage.complete) return;
+        
         const rect = this.elements.floorImage.getBoundingClientRect();
         
         this.canvas.width = rect.width;
@@ -76,12 +84,22 @@ class NavigationApp {
      * Setup event listeners
      */
     setupEventListeners() {
-        this.elements.findPathBtn.addEventListener('click', () => this.findPath());
-        this.elements.clearBtn.addEventListener('click', () => this.clearPath());
+        this.elements.findPathBtn.addEventListener('click', () => {
+            console.log('Find Path button clicked');
+            this.findPath();
+        });
+        this.elements.clearBtn.addEventListener('click', () => {
+            console.log('Clear button clicked');
+            this.clearPath();
+        });
         
         // Floor buttons
         this.elements.floorButtons.forEach(btn => {
-            btn.addEventListener('click', (e) => this.switchFloor(parseInt(e.target.dataset.floor)));
+            btn.addEventListener('click', (e) => {
+                const floorNum = parseInt(e.target.dataset.floor);
+                console.log('Switching to floor:', floorNum);
+                this.switchFloor(floorNum);
+            });
         });
 
         // Allow Enter key to find path
@@ -97,6 +115,7 @@ class NavigationApp {
      */
     populateDropdowns() {
         const rooms = getRoomsAsArray();
+        console.log('Populating dropdowns with', rooms.length, 'rooms');
         
         rooms.forEach(room => {
             const optionStart = document.createElement('option');
@@ -115,21 +134,28 @@ class NavigationApp {
      * Switch floor display
      */
     switchFloor(floorNumber) {
+        console.log('Switching floor to:', floorNumber);
         this.currentFloor = floorNumber;
         
         // Update active button
         this.elements.floorButtons.forEach(btn => {
-            btn.classList.toggle('active', parseInt(btn.dataset.floor) === floorNumber);
+            const btnFloor = parseInt(btn.dataset.floor);
+            if (btnFloor === floorNumber) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
         });
 
         // Load floor image
-        this.floorImage.src = `floor${floorNumber}.jpeg`;
+        this.loadFloorImage(floorNumber);
         
         // Redraw
         if (this.currentPath) {
             this.drawPath();
+        } else {
+            this.displayRoomLabels();
         }
-        this.displayRoomLabels();
     }
 
     /**
@@ -138,6 +164,8 @@ class NavigationApp {
     findPath() {
         const start = this.elements.startLocation.value;
         const end = this.elements.endLocation.value;
+
+        console.log('Finding path from', start, 'to', end);
 
         // Validation
         if (!start || !end) {
@@ -157,6 +185,8 @@ class NavigationApp {
             this.showError('No path found between selected locations');
             return;
         }
+
+        console.log('Path found:', result);
 
         this.currentPath = result;
         this.currentPathDetails = pathfinder.getPathDetails(result);
@@ -233,6 +263,8 @@ class NavigationApp {
             }
         }
 
+        if (currentFloorRooms.length === 0) return;
+
         // Draw lines connecting rooms on current floor
         if (currentFloorRooms.length > 1) {
             this.ctx.strokeStyle = 'rgba(102, 126, 234, 0.8)';
@@ -291,14 +323,10 @@ class NavigationApp {
     displayRoomLabels() {
         this.elements.roomLabels.innerHTML = '';
 
-        if (!this.currentPath) return;
-
-        const path = this.currentPath.path;
+        const roomsOnFloor = getRoomsByFloor(this.currentFloor);
         const roomsToDisplay = {};
 
         // Collect all rooms on current floor
-        const roomsOnFloor = getRoomsByFloor(this.currentFloor);
-        
         Object.entries(roomsOnFloor).forEach(([name, coords]) => {
             if (coords && !name.includes('Stairs') && !name.includes('Elevator')) {
                 roomsToDisplay[name] = coords;
@@ -306,8 +334,8 @@ class NavigationApp {
         });
 
         // Highlight start and end rooms
-        const startRoom = getRoom(this.currentPathDetails.start);
-        const endRoom = getRoom(this.currentPathDetails.end);
+        const startRoom = this.currentPathDetails ? getRoom(this.currentPathDetails.start) : null;
+        const endRoom = this.currentPathDetails ? getRoom(this.currentPathDetails.end) : null;
 
         // Calculate scale
         const scale = this.canvas.width / this.floorImage.width;
@@ -375,7 +403,9 @@ class NavigationApp {
 
 // Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM Content Loaded, initializing app...');
     const app = new NavigationApp();
+    window.navigationApp = app;
     console.log('🏢 Building Navigation System initialized');
     console.log('Total rooms:', Object.keys(getAllRooms()).length);
 });
