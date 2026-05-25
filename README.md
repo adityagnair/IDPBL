@@ -179,4 +179,4 @@ This project is open source and available under the MIT License.
 
 ---
 
-
+**Need help?** Check the browser console (F12) for detailed debug information.

@@ -3,72 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Building Navigation System</title>
+    <title>SmartNav - Indoor Navigation System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🏢 Building Navigation System</h1>
-            <p>Find the shortest path between any two locations</p>
-        </header>
+    <!-- Intro Overlay -->
+    <div id="introOverlay" class="intro-overlay">
+        <div class="intro-card">
+            <div class="intro-icon">
+                <i class="fa-solid fa-location-dot"></i>
+            </div>
+            <h1>SMARTNAV</h1>
+            <h2>INDOOR NAVIGATION SYSTEM</h2>
+            <p>Find your way. Anywhere, Inside.</p>
+            <button id="startNavBtn" class="btn-primary-large">START NAVIGATION</button>
+        </div>
+    </div>
 
-        <div class="content">
-            <!-- Control Panel -->
-            <div class="control-panel">
-                <div class="search-section">
-                    <div class="input-group">
-                        <label for="startLocation">Start Location:</label>
-                        <select id="startLocation">
-                            <option value="">Select starting point...</option>
-                        </select>
-                    </div>
-
-                    <div class="input-group">
-                        <label for="endLocation">End Location:</label>
-                        <select id="endLocation">
-                            <option value="">Select destination...</option>
-                        </select>
-                    </div>
-
-                    <button id="findPathBtn" class="btn btn-primary">Find Shortest Path</button>
-                    <button id="clearBtn" class="btn btn-secondary">Clear</button>
-                </div>
-
-                <!-- Path Information -->
-                <div id="pathInfo" class="path-info hidden">
-                    <h3>Path Details</h3>
-                    <div id="pathSteps" class="path-steps"></div>
-                    <div id="pathStats" class="path-stats"></div>
-                </div>
-
-                <!-- Error Message -->
-                <div id="errorMsg" class="error-msg hidden"></div>
+    <div class="app-container">
+        <!-- Top Navigation Bar -->
+        <header class="top-bar">
+            <div class="logo">
+                <i class="fa-solid fa-map-location-dot"></i>
+                <span>SmartNav</span>
+            </div>
+            
+            <div class="search-container">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" id="searchInput" placeholder="Search for a location..." autocomplete="off">
+                <button id="clearSearchBtn" class="clear-btn hidden"><i class="fa-solid fa-xmark"></i></button>
+                <div id="searchResults" class="search-dropdown hidden"></div>
             </div>
 
-            <!-- Floor Plan Viewer -->
-            <div class="floor-plan-container">
+            <div class="controls-container">
                 <div class="floor-selector">
-                    <button class="floor-btn active" data-floor="1">Floor 1</button>
-                    <button class="floor-btn" data-floor="2">Floor 2</button>
-                    <button class="floor-btn" data-floor="3">Floor 3</button>
-                    <button class="floor-btn" data-floor="4">Floor 4</button>
-                    <button class="floor-btn" data-floor="5">Floor 5</button>
+                    <span class="floor-label">Floor:</span>
+                    <button class="floor-btn active" data-floor="1">1</button>
+                    <button class="floor-btn" data-floor="2">2</button>
+                    <button class="floor-btn" data-floor="3">3</button>
+                    <button class="floor-btn" data-floor="4">4</button>
+                    <button class="floor-btn" data-floor="5">5</button>
                 </div>
+                <button class="menu-btn"><i class="fa-solid fa-bars"></i></button>
+            </div>
+        </header>
 
-                <div class="floor-viewer">
-                    <div class="image-wrapper">
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Map Container -->
+            <div class="map-area">
+                <div class="floor-viewer" id="floorViewer">
+                    <div class="image-wrapper" id="imageWrapper">
                         <img id="floorImage" src="floor1.jpeg" alt="Floor Plan">
                         <canvas id="pathCanvas" class="path-canvas"></canvas>
                         <div id="roomLabels" class="room-labels"></div>
                     </div>
                 </div>
+
+                <!-- Floating Legend -->
+                <div class="floating-legend" id="legend">
+                    <h4>Legend</h4>
+                    <div class="legend-item"><span class="dot start"></span> Start Point</div>
+                    <div class="legend-item"><span class="dot end"></span> Destination</div>
+                    <div class="legend-item"><span class="line"></span> Path</div>
+                </div>
             </div>
-        </div>
+
+            <!-- Left Panel: Location Info (Pops up when a location is selected) -->
+            <div id="locationPanel" class="side-panel left-panel hidden">
+                <button class="close-panel-btn" onclick="app.closeLocationPanel()"><i class="fa-solid fa-xmark"></i></button>
+                <div class="panel-tag">Destination</div>
+                <h3 id="locName">Room Name</h3>
+                <p id="locDetails" class="loc-details">Floor 1</p>
+                
+                <div class="start-selection">
+                    <label>Start from:</label>
+                    <select id="startLocationSelect" class="modern-select">
+                        <option value="">Select starting point...</option>
+                    </select>
+                </div>
+
+                <button id="navigateBtn" class="btn-navigate">
+                    <i class="fa-solid fa-route"></i> NAVIGATE
+                </button>
+                <div id="errorMsg" class="error-msg hidden"></div>
+            </div>
+
+            <!-- Right Panel: Navigation Steps (Pops up when navigating) -->
+            <div id="stepsPanel" class="side-panel right-panel hidden">
+                <button class="close-panel-btn" onclick="app.closeStepsPanel()"><i class="fa-solid fa-xmark"></i></button>
+                <h3>Navigation Steps</h3>
+                <div id="pathSteps" class="steps-list">
+                    <!-- Steps will be populated here -->
+                </div>
+            </div>
+        </main>
     </div>
 
-    <script src="buildingData.js"></script>
-    <script src="pathfinding.js"></script>
-    <script src="app.js"></script>
+    <script src="buildingData.js?v=11"></script>
+    <script src="pathfinding.js?v=11"></script>
+    <script src="app.js?v=11"></script>
 </body>
 </html>
