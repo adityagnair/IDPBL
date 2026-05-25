@@ -34,15 +34,38 @@ class Pathfinder {
                     const room2 = roomsOnFloor[room2Name];
 
                     if (room1 && room2) {
+                        const isCorridor1 = room1.isCorridor;
+                        const isCorridor2 = room2.isCorridor;
+                        const isNonCorridor1 = !isCorridor1;
+                        const isNonCorridor2 = !isCorridor2;
+
+                        // Prevent direct non-corridor to non-corridor connections
+                        if (isNonCorridor1 && isNonCorridor2) {
+                            continue;
+                        }
+
+                        // Rooms, Stairs, and Elevators ONLY connect to their dedicated door nodes
+                        if (isNonCorridor1 && isCorridor2) {
+                            if (room2.isDoorFor !== room1Name) continue;
+                        }
+                        if (isNonCorridor2 && isCorridor1) {
+                            if (room1.isDoorFor !== room2Name) continue;
+                        }
+
+                        let maxDist = threshold;
+                        // Enforce orthogonal connections for corridors
+                        if (isCorridor1 && isCorridor2) {
+                            if (room1.x !== room2.x && room1.y !== room2.y) {
+                                continue;
+                            }
+                        } else {
+                            // It's a connection between a room and its door node. Bypass threshold.
+                            maxDist = Infinity;
+                        }
+
                         const distance = getDistance(room1, room2);
                         
-                        // Connect if within threshold or if they're stairs/elevators
-                        if (distance < threshold || 
-                            room1Name.includes('Stairs') || 
-                            room1Name.includes('Elevator') ||
-                            room2Name.includes('Stairs') || 
-                            room2Name.includes('Elevator')) {
-                            
+                        if (distance < maxDist) {
                             graph[room1Name][room2Name] = distance;
                             graph[room2Name][room1Name] = distance;
                         }
@@ -218,6 +241,10 @@ class Pathfinder {
             if (currentRoom && currentRoom.floor !== undefined) {
                 floors.add(currentRoom.floor);
                 lastKnownFloor = currentRoom.floor;
+            }
+
+            if (currentName.startsWith('_')) {
+                continue;
             }
 
             // Check if we're at a staircase or elevator

@@ -356,7 +356,6 @@ class NavigationApp {
             statsHTML += `<div class="stat-item"><span class="stat-label">Floor:</span> ${getRoom(details.start).floor}</div>`;
         }
         
-        statsHTML += `<div class="stat-item"><span class="stat-label">Total distance:</span> ~${details.totalDistance} meters</div>`;
         statsHTML += `<div class="stat-item"><span class="stat-label">Total steps:</span> ${details.steps.length}</div>`;
 
         this.elements.pathStats.innerHTML = statsHTML;
@@ -370,92 +369,65 @@ class NavigationApp {
     drawPath() {
         console.log('🎨 Drawing path on canvas');
         
-        if (!this.currentPath || !this.imageLoaded) {
-            console.log('⚠️ Cannot draw: path=' + !!this.currentPath + ', imageLoaded=' + this.imageLoaded);
-            return;
-        }
+        if (!this.currentPath || !this.imageLoaded) return;
 
-        // Clear canvas
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
         const path = this.currentPath.path;
-        const details = this.currentPathDetails;
-        
-        // Find rooms that are on current floor
-        const currentFloorRooms = [];
-        
-        for (let i = 0; i < path.length; i++) {
-            const room = path[i];
-            const roomData = getRoom(room);
-            
-            const isOnFloor = roomData && (
-                roomData.floor === this.currentFloor || 
-                (roomData.floors && roomData.floors.includes(this.currentFloor))
-            );
-            
-            if (isOnFloor) {
-                currentFloorRooms.push({
-                    name: room,
-                    index: i,
-                    data: roomData
-                });
-            }
-        }
-
-        console.log('📍 Current floor rooms:', currentFloorRooms.length);
-
-        if (currentFloorRooms.length === 0) {
-            console.log('ℹ️ No rooms on current floor in path');
-            return;
-        }
-
-        // Calculate scale
         const scaleX = this.canvas.width / this.floorImage.width;
         const scaleY = this.canvas.height / this.floorImage.height;
 
-        // Draw lines connecting rooms on current floor
-        if (currentFloorRooms.length > 1) {
-            this.ctx.strokeStyle = 'rgba(102, 126, 234, 0.8)';
-            this.ctx.lineWidth = 3;
-            this.ctx.lineCap = 'round';
-            this.ctx.lineJoin = 'round';
-
-            for (let i = 0; i < currentFloorRooms.length - 1; i++) {
-                const room1 = currentFloorRooms[i].data;
-                const room2 = currentFloorRooms[i + 1].data;
-
-                const x1 = room1.x * scaleX;
-                const y1 = room1.y * scaleY;
-                const x2 = room2.x * scaleX;
-                const y2 = room2.y * scaleY;
-
-                this.ctx.beginPath();
-                this.ctx.moveTo(x1, y1);
-                this.ctx.lineTo(x2, y2);
-                this.ctx.stroke();
-            }
+        // Collect all nodes on the current floor (rooms + corridor waypoints)
+        const onFloor = [];
+        for (let i = 0; i < path.length; i++) {
+            const roomData = getRoom(path[i]);
+            const isOnFloor = roomData && (
+                roomData.floor === this.currentFloor ||
+                (roomData.floors && roomData.floors.includes(this.currentFloor))
+            );
+            if (isOnFloor) onFloor.push({ name: path[i], data: roomData });
         }
 
-        // Draw points for rooms on current floor
-        currentFloorRooms.forEach((room, idx) => {
-            const x = room.data.x * scaleX;
-            const y = room.data.y * scaleY;
+        if (onFloor.length === 0) return;
 
-            // Determine color
-            if (idx === 0) {
-                this.ctx.fillStyle = '#4caf50'; // Green for start
-            } else if (idx === currentFloorRooms.length - 1) {
-                this.ctx.fillStyle = '#f44336'; // Red for end
-            } else {
-                this.ctx.fillStyle = '#667eea'; // Blue for middle
-            }
+        // --- Draw the corridor path line through all waypoints ---
+        this.ctx.strokeStyle = 'rgba(102, 126, 234, 0.9)';
+        this.ctx.lineWidth = 4;
+        this.ctx.lineCap  = 'round';
+        this.ctx.lineJoin = 'round';
+        this.ctx.setLineDash([]);
 
-            // Draw circle
+        this.ctx.beginPath();
+        onFloor.forEach((node, i) => {
+            const x = node.data.x * scaleX;
+            const y = node.data.y * scaleY;
+            if (i === 0) this.ctx.moveTo(x, y);
+            else         this.ctx.lineTo(x, y);
+        });
+        this.ctx.stroke();
+
+        // --- Draw dots only on actual rooms (not hidden corridor waypoints) ---
+        onFloor.forEach((node, idx) => {
+            if (node.name.startsWith('_')) return; // skip corridor nodes
+            const x = node.data.x * scaleX;
+            const y = node.data.y * scaleY;
+
+            const isStart = node.name === this.currentPathDetails.start;
+            const isEnd   = node.name === this.currentPathDetails.end;
+
+            // Outer glow
             this.ctx.beginPath();
-            this.ctx.arc(x, y, 8, 0, 2 * Math.PI);
+            this.ctx.arc(x, y, 12, 0, 2 * Math.PI);
+            this.ctx.fillStyle = isStart ? 'rgba(76,175,80,0.25)'
+                               : isEnd   ? 'rgba(244,67,54,0.25)'
+                                         : 'rgba(102,126,234,0.2)';
             this.ctx.fill();
 
-            // Draw outline
+            // Main circle
+            this.ctx.beginPath();
+            this.ctx.arc(x, y, 8, 0, 2 * Math.PI);
+            this.ctx.fillStyle = isStart ? '#4caf50' : isEnd ? '#f44336' : '#667eea';
+            this.ctx.fill();
             this.ctx.strokeStyle = 'white';
             this.ctx.lineWidth = 2;
             this.ctx.stroke();
@@ -476,9 +448,9 @@ class NavigationApp {
         const roomsOnFloor = getRoomsByFloor(this.currentFloor);
         const roomsToDisplay = {};
 
-        // Collect all rooms on current floor (excluding stairs/elevators)
+        // Collect all rooms on current floor (excluding stairs, elevators, and corridor nodes)
         Object.entries(roomsOnFloor).forEach(([name, coords]) => {
-            if (coords && !name.includes('Stairs') && !name.includes('Elevator')) {
+            if (coords && !name.includes('Stairs') && !name.includes('Elevator') && !name.startsWith('_')) {
                 roomsToDisplay[name] = coords;
             }
         });

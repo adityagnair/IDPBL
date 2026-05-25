@@ -88,6 +88,97 @@ const BUILDING_DATA = {
 };
 
 /**
+ * Generate hidden corridor waypoints forming a rectangular walkway network.
+ * Left vertical  corridor: x = 200
+ * Right vertical corridor: x = 1230
+ * Bottom horiz  corridor : y = 1080
+ * Top horiz     corridor : y = 200
+ * Waypoints are spaced 200 px apart so they chain within the 380 px threshold.
+ */
+function _generateCorridors() {
+    const nodes = [];
+    const L = 300, R = 1080, T = 280, B = 1040;
+    
+    // Backbone nodes
+    for (let f = 1; f <= 5; f++) {
+        // Explicit corners
+        nodes.push({ name: `_C_TL_${f}`, x: L, y: T, floor: f, isCorridor: true });
+        nodes.push({ name: `_C_TR_${f}`, x: R, y: T, floor: f, isCorridor: true });
+        nodes.push({ name: `_C_BL_${f}`, x: L, y: B, floor: f, isCorridor: true });
+        nodes.push({ name: `_C_BR_${f}`, x: R, y: B, floor: f, isCorridor: true });
+
+        for (let y = T; y <= 1400; y += 200)
+            nodes.push({ name: `_CL_${f}_${y}`,  x: L, y, floor: f, isCorridor: true });
+        for (let y = T; y <= 1200; y += 200)
+            nodes.push({ name: `_CR_${f}_${y}`,  x: R, y, floor: f, isCorridor: true });
+        for (let x = L; x <= R; x += 200)
+            nodes.push({ name: `_CB_${f}_${x}`,  x, y: B, floor: f, isCorridor: true });
+        for (let x = L; x <= R; x += 200)
+            nodes.push({ name: `_CT_${f}_${x}`,  x, y: T, floor: f, isCorridor: true });
+    }
+
+    // Generate specific door nodes for all rooms
+    for (let f = 1; f <= 5; f++) {
+        if (!BUILDING_DATA[f] || !BUILDING_DATA[f].rooms) continue;
+        
+        const rooms = BUILDING_DATA[f].rooms;
+        for (const [roomName, room] of Object.entries(rooms)) {
+            const dL = Math.abs(room.x - L);
+            const dR = Math.abs(room.x - R);
+            const dT = Math.abs(room.y - T);
+            const dB = Math.abs(room.y - B);
+            
+            const minDist = Math.min(dL, dR, dT, dB);
+            let doorX = room.x;
+            let doorY = room.y;
+            
+            if (minDist === dL) doorX = L;
+            else if (minDist === dR) doorX = R;
+            else if (minDist === dT) doorY = T;
+            else if (minDist === dB) doorY = B;
+            
+            nodes.push({ name: `_DOOR_${roomName}`, x: doorX, y: doorY, floor: f, isCorridor: true, isDoorFor: roomName });
+        }
+    }
+    
+    // Generate door nodes for stairs and elevators
+    const addDoorForFacility = (facility) => {
+        facility.floors.forEach(f => {
+            const dL = Math.abs(facility.x - L);
+            const dR = Math.abs(facility.x - R);
+            const dT = Math.abs(facility.y - T);
+            const dB = Math.abs(facility.y - B);
+            
+            const minDist = Math.min(dL, dR, dT, dB);
+            let doorX = facility.x;
+            let doorY = facility.y;
+            
+            if (minDist === dL) doorX = L;
+            else if (minDist === dR) doorX = R;
+            else if (minDist === dT) doorY = T;
+            else if (minDist === dB) doorY = B;
+            
+            const nameToUse = facility.name || `Elevator`;
+            nodes.push({ name: `_DOOR_${nameToUse}_f${f}`, x: doorX, y: doorY, floor: f, isCorridor: true, isDoorFor: nameToUse });
+        });
+    };
+
+    if (BUILDING_DATA.stairs) {
+        BUILDING_DATA.stairs.forEach(addDoorForFacility);
+    }
+    if (BUILDING_DATA.elevators) {
+        BUILDING_DATA.elevators.forEach((elev, idx) => {
+            if (!elev.name) elev.name = `Elevator ${idx + 1}`;
+            addDoorForFacility(elev);
+        });
+    }
+
+    return nodes;
+}
+const CORRIDOR_DATA = _generateCorridors();
+
+
+/**
  * Get all rooms as a flat array of room names
  */
 function getRoomsAsArray() {
@@ -99,7 +190,7 @@ function getRoomsAsArray() {
             });
         }
     }
-    return rooms.sort();
+    return rooms.sort(); // corridor nodes (names starting with _) are excluded
 }
 
 /**
@@ -112,8 +203,7 @@ function getAllRooms() {
             Object.assign(allRooms, BUILDING_DATA[floor].rooms);
         }
     }
-
-    // Add stairs and elevators so they exist in the graph and getRoom can find them
+    // Stairs & elevators
     if (BUILDING_DATA.stairs) {
         BUILDING_DATA.stairs.forEach(stair => {
             allRooms[stair.name] = { x: stair.x, y: stair.y, floors: stair.floors, isStair: true };
@@ -125,7 +215,10 @@ function getAllRooms() {
             allRooms[name] = { x: elev.x, y: elev.y, floors: elev.floors, isElevator: true };
         });
     }
-
+    // Hidden corridor waypoints
+    CORRIDOR_DATA.forEach(c => {
+        allRooms[c.name] = c;
+    });
     return allRooms;
 }
 
@@ -147,17 +240,21 @@ function getRoomsByFloor(floor) {
     if (BUILDING_DATA.stairs) {
         BUILDING_DATA.stairs.forEach(stair => {
             if (stair.floors.includes(floor)) {
-                rooms[stair.name] = { x: stair.x, y: stair.y };
+                rooms[stair.name] = { x: stair.x, y: stair.y, isStair: true };
             }
         });
     }
     if (BUILDING_DATA.elevators) {
         BUILDING_DATA.elevators.forEach((elev, idx) => {
             if (elev.floors.includes(floor)) {
-                rooms[elev.name || `Elevator ${idx + 1}`] = { x: elev.x, y: elev.y };
+                rooms[elev.name || `Elevator ${idx + 1}`] = { x: elev.x, y: elev.y, isElevator: true };
             }
         });
     }
+    // Add corridor nodes for this floor
+    CORRIDOR_DATA.filter(c => c.floor === floor).forEach(c => {
+        rooms[c.name] = c;
+    });
     return rooms;
 }
 
@@ -184,12 +281,9 @@ function onSameFloor(room1Name, room2Name) {
     return r1 && r2 && r1.floor === r2.floor;
 }
 
-/**
- * Max pixel distance between rooms to consider them connected on the same floor.
- * Images are 1600×1515, so 1500 covers the full diagonal.
- */
-function getConnectivityThreshold() { return 1500; }
+/** Max pixel distance to consider two nodes connected on the same floor */
+function getConnectivityThreshold() { return 380; }
 
 console.log('🏢 Building data loaded successfully');
 console.log(`📊 Total rooms: ${Object.keys(getAllRooms()).length}`);
-console.log(`🔢 Floors: ${Object.keys(BUILDING_DATA).filter(k => !isNaN(k)).length}`);
+console.log(`🔢 Floors: ${Object.keys(BUILDING_DATA).filter(k => !isNaN(k)).length}`);
