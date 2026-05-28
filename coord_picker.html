@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Room Coordinate Picker</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee; display: flex; height: 100vh; overflow: hidden; }
+
+        #sidebar {
+            width: 320px;
+            min-width: 320px;
+            background: #16213e;
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+            gap: 12px;
+            overflow-y: auto;
+            border-right: 2px solid #0f3460;
+        }
+
+        h1 { font-size: 1.1em; color: #e94560; }
+        h2 { font-size: 0.85em; text-transform: uppercase; color: #aaa; letter-spacing: 1px; margin-top: 8px; }
+
+        .floor-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+        .floor-tab {
+            padding: 6px 12px; background: #0f3460; border: none; border-radius: 6px;
+            color: #ccc; cursor: pointer; font-size: 0.85em; transition: all 0.2s;
+        }
+        .floor-tab.active { background: #e94560; color: white; }
+
+        #roomList { display: flex; flex-direction: column; gap: 6px; }
+
+        .room-item {
+            padding: 8px 10px; background: #0f3460; border-radius: 6px;
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.82em; border: 2px solid transparent; cursor: pointer;
+            transition: all 0.2s;
+        }
+        .room-item:hover { border-color: #667eea; }
+        .room-item.selecting { border-color: #e94560; background: #2a0a18; }
+        .room-item.done { border-color: #4caf50; }
+
+        .room-name { flex: 1; }
+        .room-coords { color: #aaa; font-size: 0.75em; margin-top: 2px; }
+        .set-btn {
+            background: #667eea; color: white; border: none; border-radius: 4px;
+            padding: 4px 8px; cursor: pointer; font-size: 0.75em; white-space: nowrap;
+        }
+        .done-mark { color: #4caf50; font-weight: bold; }
+
+        #status {
+            padding: 10px; background: #0f3460; border-radius: 6px;
+            font-size: 0.82em; color: #ffd700; min-height: 40px;
+        }
+
+        #copyBtn {
+            padding: 10px; background: #e94560; border: none; border-radius: 6px;
+            color: white; font-weight: bold; cursor: pointer; font-size: 0.9em;
+        }
+        #copyBtn:hover { background: #c73652; }
+
+        #output {
+            font-size: 0.7em; background: #0a0a1a; padding: 10px; border-radius: 6px;
+            max-height: 200px; overflow-y: auto; white-space: pre; color: #aaffaa;
+            font-family: monospace; display: none;
+        }
+
+        #imageArea {
+            flex: 1;
+            overflow: auto;
+            position: relative;
+            background: #111;
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-start;
+        }
+
+        #imageWrapper {
+            position: relative;
+            display: inline-block;
+            cursor: crosshair;
+        }
+
+        #floorImg { display: block; max-width: none; }
+
+        .pin {
+            position: absolute;
+            width: 14px; height: 14px;
+            background: #e94560;
+            border: 2px solid white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 10;
+        }
+        .pin.confirmed { background: #4caf50; }
+
+        .pin-label {
+            position: absolute;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            font-size: 10px;
+            padding: 2px 5px;
+            border-radius: 3px;
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 11;
+            transform: translate(-50%, -130%);
+        }
+
+        #crosshair {
+            position: fixed;
+            pointer-events: none;
+            z-index: 100;
+            display: none;
+        }
+        #crosshair::before, #crosshair::after {
+            content: ''; position: fixed; background: rgba(233,69,96,0.7);
+        }
+        #crosshair::before { width: 1px; height: 100vh; left: 0; top: 0; }
+        #crosshair::after { width: 100vw; height: 1px; top: 0; left: 0; }
+    </style>
+</head>
+<body>
+<div id="sidebar">
+    <h1>📍 Room Coordinate Picker</h1>
+    <p style="font-size:0.8em;color:#aaa;">Click a room → click its position on the image</p>
+
+    <div>
+        <h2>Floor</h2>
+        <div class="floor-tabs" id="floorTabs"></div>
+    </div>
+
+    <div>
+        <h2>Rooms on this floor</h2>
+        <div id="roomList"></div>
+    </div>
+
+    <div id="status">Click a room name to start placing it.</div>
+
+    <button id="copyBtn" onclick="copyOutput()">📋 Copy buildingData.js</button>
+    <div id="output"></div>
+</div>
+
+<div id="imageArea">
+    <div id="imageWrapper">
+        <img id="floorImg" src="">
+    </div>
+</div>
+
+<script src="buildingData.js"></script>
+<script>
+    const ROOMS_BY_FLOOR = {};
+    for (let f = 1; f <= 5; f++) {
+        if (BUILDING_DATA[f] && BUILDING_DATA[f].rooms) {
+            ROOMS_BY_FLOOR[f] = Object.entries(BUILDING_DATA[f].rooms).map(([name, data]) => ({
+                name,
+                x: data.x,
+                y: data.y,
+                placed: false
+            }));
+        }
+    }
+
+    // Add stairs and elevators
+    const verticals = [];
+    (BUILDING_DATA.stairs || []).forEach(s => verticals.push({ name: s.name, type: 'stair', floors: s.floors, x: s.x, y: s.y, placed: false }));
+    (BUILDING_DATA.elevators || []).forEach(e => verticals.push({ name: e.name, type: 'elevator', floors: e.floors, x: e.x, y: e.y, placed: false }));
+
+    let currentFloor = 1;
+    let selectingRoom = null;
+    let imageScale = { x: 1, y: 1 };
+    let naturalW = 1, naturalH = 1;
+
+    const floorImg = document.getElementById('floorImg');
+    const imageWrapper = document.getElementById('imageWrapper');
+    const statusEl = document.getElementById('status');
+
+    // Build floor tabs
+    const tabsEl = document.getElementById('floorTabs');
+    for (let f = 1; f <= 5; f++) {
+        const btn = document.createElement('button');
+        btn.className = 'floor-tab' + (f === 1 ? ' active' : '');
+        btn.textContent = `Floor ${f}`;
+        btn.onclick = () => switchFloor(f);
+        tabsEl.appendChild(btn);
+    }
+
+    function switchFloor(f) {
+        currentFloor = f;
+        selectingRoom = null;
+        document.querySelectorAll('.floor-tab').forEach((b, i) => b.classList.toggle('active', i + 1 === f));
+        floorImg.src = `floor${f}.jpeg`;
+        renderRoomList();
+        clearPins();
+        redrawPins();
+        statusEl.textContent = 'Click a room name to start placing it.';
+    }
+
+    floorImg.onload = () => {
+        naturalW = floorImg.naturalWidth;
+        naturalH = floorImg.naturalHeight;
+        floorImg.style.width = naturalW + 'px';
+        floorImg.style.height = naturalH + 'px';
+        redrawPins();
+    };
+
+    function getRoomsForFloor(f) {
+        const rooms = (ROOMS_BY_FLOOR[f] || []).map(r => ({ ...r }));
+        // Add verticals that include this floor
+        verticals.filter(v => v.floors.includes(f)).forEach(v => rooms.push({ ...v }));
+        return rooms;
+    }
+
+    // State tracking
+    const placedCoords = {}; // name -> {x, y} in natural image pixels
+
+    function renderRoomList() {
+        const list = document.getElementById('roomList');
+        list.innerHTML = '';
+        const rooms = getRoomsForFloor(currentFloor);
+        rooms.forEach(room => {
+            const item = document.createElement('div');
+            const placed = placedCoords[room.name];
+            item.className = 'room-item' + (placed ? ' done' : '') + (selectingRoom === room.name ? ' selecting' : '');
+            item.innerHTML = `
+                <div>
+                    <div class="room-name">${room.name}</div>
+                    ${placed ? `<div class="room-coords">(${placed.x}, ${placed.y})</div>` : ''}
+                </div>
+                ${placed ? '<span class="done-mark">✓</span>' : `<button class="set-btn">Set</button>`}
+            `;
+            item.querySelector(placed ? '.done-mark' : '.set-btn').onclick = (e) => {
+                e.stopPropagation();
+                selectRoom(room.name);
+            };
+            list.appendChild(item);
+        });
+    }
+
+    function selectRoom(name) {
+        selectingRoom = name;
+        statusEl.textContent = `📍 Click on the image to place: ${name}`;
+        renderRoomList();
+    }
+
+    imageWrapper.addEventListener('click', (e) => {
+        if (!selectingRoom) return;
+        const rect = imageWrapper.getBoundingClientRect();
+        const x = Math.round(e.clientX - rect.left);
+        const y = Math.round(e.clientY - rect.top);
+        placedCoords[selectingRoom] = { x, y };
+        statusEl.textContent = `✅ Placed "${selectingRoom}" at (${x}, ${y})`;
+        selectingRoom = null;
+        renderRoomList();
+        clearPins();
+        redrawPins();
+    });
+
+    function clearPins() {
+        document.querySelectorAll('.pin, .pin-label').forEach(el => el.remove());
+    }
+
+    function redrawPins() {
+        clearPins();
+        const rooms = getRoomsForFloor(currentFloor);
+        rooms.forEach(room => {
+            const placed = placedCoords[room.name];
+            if (!placed) return;
+            const pin = document.createElement('div');
+            pin.className = 'pin confirmed';
+            pin.style.left = placed.x + 'px';
+            pin.style.top = placed.y + 'px';
+            imageWrapper.appendChild(pin);
+
+            const lbl = document.createElement('div');
+            lbl.className = 'pin-label';
+            lbl.textContent = room.name;
+            lbl.style.left = placed.x + 'px';
+            lbl.style.top = placed.y + 'px';
+            imageWrapper.appendChild(lbl);
+        });
+    }
+
+    function copyOutput() {
+        const lines = [];
+        lines.push('const BUILDING_DATA = {');
+        for (let f = 1; f <= 5; f++) {
+            lines.push(`    ${f}: {`);
+            lines.push(`        name: "Floor ${f}",`);
+            lines.push(`        rooms: {`);
+            (ROOMS_BY_FLOOR[f] || []).forEach(room => {
+                const placed = placedCoords[room.name] || { x: room.x, y: room.y };
+                lines.push(`            "${room.name}": { x: ${placed.x}, y: ${placed.y}, floor: ${f} },`);
+            });
+            lines.push(`        }`);
+            lines.push(`    },`);
+        }
+        lines.push('');
+        lines.push('    stairs: [');
+        verticals.filter(v => v.type === 'stair').forEach(v => {
+            const placed = placedCoords[v.name] || { x: v.x, y: v.y };
+            lines.push(`        { x: ${placed.x}, y: ${placed.y}, floors: [1,2,3,4,5], name: "${v.name}" },`);
+        });
+        lines.push('    ],');
+        lines.push('    elevators: [');
+        verticals.filter(v => v.type === 'elevator').forEach(v => {
+            const placed = placedCoords[v.name] || { x: v.x, y: v.y };
+            lines.push(`        { x: ${placed.x}, y: ${placed.y}, floors: [1,2,3,4,5], name: "${v.name}" },`);
+        });
+        lines.push('    ]');
+        lines.push('};');
+
+        const text = lines.join('\n');
+        navigator.clipboard.writeText(text).then(() => statusEl.textContent = '✅ Copied to clipboard!');
+
+        const out = document.getElementById('output');
+        out.style.display = 'block';
+        out.textContent = text;
+    }
+
+    // Init
+    switchFloor(1);
+</script>
+</body>
+</html>

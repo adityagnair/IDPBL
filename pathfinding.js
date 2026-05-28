@@ -34,15 +34,38 @@ class Pathfinder {
                     const room2 = roomsOnFloor[room2Name];
 
                     if (room1 && room2) {
+                        const isCorridor1 = room1.isCorridor;
+                        const isCorridor2 = room2.isCorridor;
+                        const isNonCorridor1 = !isCorridor1;
+                        const isNonCorridor2 = !isCorridor2;
+
+                        // Prevent direct non-corridor to non-corridor connections
+                        if (isNonCorridor1 && isNonCorridor2) {
+                            continue;
+                        }
+
+                        // Rooms, Stairs, and Elevators ONLY connect to their dedicated door nodes
+                        if (isNonCorridor1 && isCorridor2) {
+                            if (room2.isDoorFor !== room1Name) continue;
+                        }
+                        if (isNonCorridor2 && isCorridor1) {
+                            if (room1.isDoorFor !== room2Name) continue;
+                        }
+
+                        let maxDist = threshold;
+                        // Enforce orthogonal connections for corridors
+                        if (isCorridor1 && isCorridor2) {
+                            if (room1.x !== room2.x && room1.y !== room2.y) {
+                                continue;
+                            }
+                        } else {
+                            // It's a connection between a room and its door node. Bypass threshold.
+                            maxDist = Infinity;
+                        }
+
                         const distance = getDistance(room1, room2);
                         
-                        // Connect if within threshold or if they're stairs/elevators
-                        if (distance < threshold || 
-                            room1Name.includes('Stairs') || 
-                            room1Name.includes('Elevator') ||
-                            room2Name.includes('Stairs') || 
-                            room2Name.includes('Elevator')) {
-                            
+                        if (distance < maxDist) {
                             graph[room1Name][room2Name] = distance;
                             graph[room2Name][room1Name] = distance;
                         }
@@ -55,7 +78,7 @@ class Pathfinder {
     }
 
     /**
-     * Find shortest path using Dijkstra's algorithm
+     * Find shortest path using A* algorithm
      */
     findShortestPath(startName, endName) {
         const start = getRoom(startName);
@@ -71,8 +94,8 @@ class Pathfinder {
             return this.findPathMultiFloor(startName, endName);
         }
 
-        // Same floor - use regular Dijkstra
-        return this.dijkstra(startName, endName);
+        // Same floor - use regular A*
+        return this.astar(startName, endName);
     }
 
     /**
@@ -91,11 +114,11 @@ class Pathfinder {
         for (const stair of stairs) {
             if (stair.floors.includes(start.floor) && stair.floors.includes(end.floor)) {
                 // Find path: start -> stairs on start floor
-                const path1 = this.dijkstra(startName, stair.name);
+                const path1 = this.astar(startName, stair.name);
                 if (!path1) continue;
 
                 // Find path: stairs on end floor -> end
-                const path2 = this.dijkstra(stair.name, endName);
+                const path2 = this.astar(stair.name, endName);
                 if (!path2) continue;
 
                 // Combine paths
@@ -113,11 +136,11 @@ class Pathfinder {
         for (const elevator of elevators) {
             if (elevator.floors.includes(start.floor) && elevator.floors.includes(end.floor)) {
                 // Find path: start -> elevator on start floor
-                const path1 = this.dijkstra(startName, elevator.name);
+                const path1 = this.astar(startName, elevator.name);
                 if (!path1) continue;
 
                 // Find path: elevator on end floor -> end
-                const path2 = this.dijkstra(elevator.name, endName);
+                const path2 = this.astar(elevator.name, endName);
                 if (!path2) continue;
 
                 // Combine paths
@@ -135,7 +158,86 @@ class Pathfinder {
     }
 
     /**
-     * Dijkstra's algorithm implementation
+     * A* algorithm implementation
+     */
+    astar(startName, endName) {
+        const startNode = getRoom(startName);
+        const endNode = getRoom(endName);
+
+        if (!startNode || !endNode) {
+            return null;
+        }
+
+        const graph = this.graph;
+        const openSet = new Set([startName]);
+        const cameFrom = {};
+
+        // cost from start to node
+        const gScore = {};
+        // estimated cost from start to end through node
+        const fScore = {};
+
+        Object.keys(graph).forEach(node => {
+            gScore[node] = Infinity;
+            fScore[node] = Infinity;
+            cameFrom[node] = null;
+        });
+
+        gScore[startName] = 0;
+        fScore[startName] = getDistance(startNode, endNode);
+
+        while (openSet.size > 0) {
+            // Find node in openSet with lowest fScore
+            let current = null;
+            let minFScore = Infinity;
+            for (const node of openSet) {
+                if (fScore[node] < minFScore) {
+                    minFScore = fScore[node];
+                    current = node;
+                }
+            }
+
+            if (current === null) {
+                break;
+            }
+
+            if (current === endName) {
+                // Reconstruct path
+                const path = [];
+                let temp = current;
+                while (temp !== null) {
+                    path.unshift(temp);
+                    temp = cameFrom[temp];
+                }
+                return {
+                    path: path,
+                    distance: gScore[endName]
+                };
+            }
+
+            openSet.delete(current);
+
+            const neighbors = graph[current] || {};
+            for (const neighbor of Object.keys(neighbors)) {
+                const neighborNode = getRoom(neighbor);
+                if (!neighborNode) continue;
+
+                // gScore to neighbor is gScore to current + edge weight
+                const tentativeGScore = gScore[current] + neighbors[neighbor];
+                if (tentativeGScore < gScore[neighbor]) {
+                    cameFrom[neighbor] = current;
+                    gScore[neighbor] = tentativeGScore;
+                    fScore[neighbor] = tentativeGScore + getDistance(neighborNode, endNode);
+                    openSet.add(neighbor);
+                }
+            }
+        }
+
+        return null; // Path not found
+    }
+
+    /**
+     * Dijkstra's algorithm implementation (preserved for compatibility/testing)
      */
     dijkstra(startName, endName) {
         const distances = {};
@@ -208,14 +310,20 @@ class Pathfinder {
 
         const steps = [];
         const floors = new Set();
+        let lastKnownFloor = null;
 
         // Analyze path and create step descriptions
         for (let i = 0; i < path.length; i++) {
             const currentName = path[i];
             const currentRoom = getRoom(currentName);
 
-            if (currentRoom) {
+            if (currentRoom && currentRoom.floor !== undefined) {
                 floors.add(currentRoom.floor);
+                lastKnownFloor = currentRoom.floor;
+            }
+
+            if (currentName.startsWith('_')) {
+                continue;
             }
 
             // Check if we're at a staircase or elevator
@@ -224,13 +332,13 @@ class Pathfinder {
                     const nextName = path[i + 1];
                     const nextRoom = getRoom(nextName);
                     
-                    if (nextRoom && currentRoom) {
-                        if (nextRoom.floor > currentRoom.floor) {
+                    if (nextRoom && lastKnownFloor !== null && nextRoom.floor !== undefined) {
+                        if (nextRoom.floor > lastKnownFloor) {
                             steps.push({
                                 type: 'stairs',
                                 description: `Take ${currentName} up to Floor ${nextRoom.floor}`
                             });
-                        } else if (nextRoom.floor < currentRoom.floor) {
+                        } else if (nextRoom.floor < lastKnownFloor) {
                             steps.push({
                                 type: 'stairs',
                                 description: `Take ${currentName} down to Floor ${nextRoom.floor}`

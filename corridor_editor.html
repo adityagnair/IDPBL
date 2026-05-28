@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Corridor Path Editor</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #0d1117; color: #cdd9e5; display: flex; height: 100vh; overflow: hidden; }
+
+/* ── Sidebar ── */
+#sidebar {
+    width: 280px; min-width: 280px;
+    background: #161b22; border-right: 1px solid #30363d;
+    display: flex; flex-direction: column; gap: 0; overflow-y: auto;
+}
+.sb-section { padding: 14px; border-bottom: 1px solid #30363d; }
+.sb-title { font-size: 1em; font-weight: 700; color: #58a6ff; margin-bottom: 10px; }
+.sb-label { font-size: 0.75em; text-transform: uppercase; letter-spacing: 1px; color: #8b949e; margin-bottom: 6px; }
+
+.floor-tabs { display: flex; flex-wrap: wrap; gap: 5px; }
+.floor-tab {
+    padding: 5px 12px; background: #21262d; border: 1px solid #30363d;
+    border-radius: 5px; color: #cdd9e5; cursor: pointer; font-size: 0.82em;
+    transition: all 0.15s;
+}
+.floor-tab.active { background: #1f6feb; border-color: #388bfd; color: white; }
+
+.mode-btns { display: flex; gap: 6px; flex-direction: column; }
+.mode-btn {
+    padding: 8px 10px; border: 1px solid #30363d; border-radius: 6px;
+    background: #21262d; color: #cdd9e5; cursor: pointer;
+    font-size: 0.83em; text-align: left; transition: all 0.15s;
+}
+.mode-btn.active { background: #1f6feb; border-color: #388bfd; color: white; }
+.mode-btn:hover:not(.active) { background: #30363d; }
+
+#statusBar {
+    padding: 10px 12px; background: #1c2128; border-radius: 6px;
+    font-size: 0.8em; color: #ffd700; min-height: 38px; line-height: 1.4;
+}
+
+.action-btn {
+    width: 100%; padding: 9px; border: none; border-radius: 6px;
+    font-size: 0.85em; font-weight: 600; cursor: pointer; transition: all 0.15s;
+}
+.btn-danger  { background: #da3633; color: white; }
+.btn-danger:hover { background: #f85149; }
+.btn-export { background: #238636; color: white; }
+.btn-export:hover { background: #2ea043; }
+.btn-clear  { background: #6e7681; color: white; }
+.btn-clear:hover { background: #8b949e; }
+
+#stats { font-size: 0.78em; color: #8b949e; }
+#stats span { color: #cdd9e5; }
+
+#outputBox {
+    font-size: 0.65em; background: #0d1117; padding: 10px;
+    border-radius: 6px; max-height: 180px; overflow-y: auto;
+    white-space: pre; color: #7ee787; font-family: monospace;
+    border: 1px solid #30363d; display: none;
+}
+
+/* ── Canvas area ── */
+#canvasArea {
+    flex: 1; overflow: auto; position: relative; background: #010409;
+    cursor: crosshair;
+}
+#canvasArea.mode-connect { cursor: pointer; }
+#canvasArea.mode-delete  { cursor: not-allowed; }
+
+#imageLayer { position: absolute; top: 0; left: 0; }
+#overlayCanvas { position: absolute; top: 0; left: 0; }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+    <div class="sb-section">
+        <div class="sb-title">🛤️ Corridor Editor</div>
+        <p style="font-size:0.75em;color:#8b949e;">Manually define corridor waypoints and connections for each floor.</p>
+    </div>
+
+    <div class="sb-section">
+        <div class="sb-label">Floor</div>
+        <div class="floor-tabs" id="floorTabs"></div>
+    </div>
+
+    <div class="sb-section">
+        <div class="sb-label">Mode</div>
+        <div class="mode-btns">
+            <button class="mode-btn active" id="modeAdd"    onclick="setMode('add')">➕ Add Waypoint (click on image)</button>
+            <button class="mode-btn"         id="modeConnect" onclick="setMode('connect')">🔗 Connect Waypoints (click two)</button>
+            <button class="mode-btn"         id="modeDelete"  onclick="setMode('delete')">🗑️ Delete (click node/edge)</button>
+        </div>
+    </div>
+
+    <div class="sb-section">
+        <div id="statusBar">Select a mode and click on the floor plan.</div>
+    </div>
+
+    <div class="sb-section">
+        <div id="stats">Waypoints: <span id="statNodes">0</span> &nbsp; Edges: <span id="statEdges">0</span></div>
+    </div>
+
+    <div class="sb-section" style="display:flex;flex-direction:column;gap:7px;">
+        <button class="action-btn btn-clear"  onclick="clearFloor()">Clear this floor</button>
+        <button class="action-btn btn-danger" onclick="clearAll()">Clear ALL floors</button>
+        <button class="action-btn btn-export" onclick="exportData()">📋 Export corridor JS</button>
+    </div>
+
+    <div class="sb-section">
+        <div id="outputBox"></div>
+    </div>
+</div>
+
+<div id="canvasArea" id="canvasArea">
+    <img id="imageLayer" src="">
+    <canvas id="overlayCanvas"></canvas>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────
+let currentFloor = 1;
+let mode = 'add';
+
+// Per-floor data:  nodes[f] = [{id, x, y}], edges[f] = [{a, b}]
+const nodes = {1:[],2:[],3:[],4:[],5:[]};
+const edges = {1:[],2:[],3:[],4:[],5:[]};
+let nextId = 1;
+
+let connectPending = null; // first node selected in connect mode
+
+const imgEl      = document.getElementById('imageLayer');
+const canvas     = document.getElementById('overlayCanvas');
+const ctx        = canvas.getContext('2d');
+const canvasArea = document.getElementById('canvasArea');
+const status     = document.getElementById('statusBar');
+
+// ── Floor tabs ─────────────────────────────────────────
+const tabsEl = document.getElementById('floorTabs');
+for (let f = 1; f <= 5; f++) {
+    const b = document.createElement('button');
+    b.className = 'floor-tab' + (f===1?' active':'');
+    b.textContent = `F${f}`;
+    b.onclick = () => switchFloor(f);
+    tabsEl.appendChild(b);
+}
+
+function switchFloor(f) {
+    currentFloor = f;
+    connectPending = null;
+    document.querySelectorAll('.floor-tab').forEach((b,i)=>b.classList.toggle('active',i+1===f));
+    imgEl.src = `floor${f}.jpeg`;
+    status.textContent = 'Floor ' + f + ' loaded.';
+    redraw();
+}
+
+imgEl.onload = () => {
+    imgEl.style.width  = imgEl.naturalWidth  + 'px';
+    imgEl.style.height = imgEl.naturalHeight + 'px';
+    canvas.width  = imgEl.naturalWidth;
+    canvas.height = imgEl.naturalHeight;
+    canvas.style.width  = imgEl.naturalWidth  + 'px';
+    canvas.style.height = imgEl.naturalHeight + 'px';
+    redraw();
+};
+
+// ── Mode ───────────────────────────────────────────────
+function setMode(m) {
+    mode = m;
+    connectPending = null;
+    document.getElementById('modeAdd').classList.toggle('active', m==='add');
+    document.getElementById('modeConnect').classList.toggle('active', m==='connect');
+    document.getElementById('modeDelete').classList.toggle('active', m==='delete');
+    canvasArea.className = 'mode-' + m;
+    status.textContent = m === 'add'     ? 'Click on the floor plan to place a waypoint.'
+                       : m === 'connect' ? 'Click the FIRST waypoint to connect.'
+                                         : 'Click a waypoint or edge to delete it.';
+}
+
+// ── Canvas click ───────────────────────────────────────
+canvas.addEventListener('click', e => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = Math.round(e.clientX - rect.left);
+    const my = Math.round(e.clientY - rect.top);
+
+    if (mode === 'add') {
+        const id = 'W' + nextId++;
+        nodes[currentFloor].push({ id, x: mx, y: my });
+        status.textContent = `✅ Added ${id} at (${mx}, ${my})`;
+        redraw();
+        updateStats();
+
+    } else if (mode === 'connect') {
+        const hit = hitNode(mx, my);
+        if (!hit) { status.textContent = 'Click on an existing waypoint.'; return; }
+        if (!connectPending) {
+            connectPending = hit;
+            status.textContent = `🔗 Selected ${hit.id}. Now click the second waypoint.`;
+            redraw();
+        } else {
+            if (connectPending.id === hit.id) { status.textContent = 'Same node — pick a different one.'; return; }
+            // Avoid duplicate edge
+            const already = edges[currentFloor].some(
+                e => (e.a===connectPending.id&&e.b===hit.id)||(e.b===connectPending.id&&e.a===hit.id)
+            );
+            if (already) { status.textContent = 'Edge already exists.'; connectPending = null; return; }
+            edges[currentFloor].push({ a: connectPending.id, b: hit.id });
+            status.textContent = `✅ Connected ${connectPending.id} ↔ ${hit.id}`;
+            connectPending = null;
+            redraw();
+            updateStats();
+        }
+
+    } else if (mode === 'delete') {
+        // Try node first
+        const hit = hitNode(mx, my);
+        if (hit) {
+            nodes[currentFloor] = nodes[currentFloor].filter(n => n.id !== hit.id);
+            edges[currentFloor] = edges[currentFloor].filter(e => e.a !== hit.id && e.b !== hit.id);
+            status.textContent = `🗑️ Deleted ${hit.id}`;
+            redraw(); updateStats(); return;
+        }
+        // Try edge
+        const eIdx = hitEdge(mx, my);
+        if (eIdx >= 0) {
+            const del = edges[currentFloor].splice(eIdx, 1)[0];
+            status.textContent = `🗑️ Deleted edge ${del.a} ↔ ${del.b}`;
+            redraw(); updateStats();
+        }
+    }
+});
+
+// ── Hit detection ──────────────────────────────────────
+function hitNode(mx, my, r=12) {
+    return nodes[currentFloor].find(n => Math.hypot(n.x-mx,n.y-my) <= r) || null;
+}
+function hitEdge(mx, my, tol=8) {
+    const fl = edges[currentFloor];
+    for (let i = 0; i < fl.length; i++) {
+        const e = fl[i];
+        const a = nodes[currentFloor].find(n=>n.id===e.a);
+        const b = nodes[currentFloor].find(n=>n.id===e.b);
+        if (!a || !b) continue;
+        if (distPointSeg(mx, my, a.x, a.y, b.x, b.y) <= tol) return i;
+    }
+    return -1;
+}
+function distPointSeg(px,py,ax,ay,bx,by) {
+    const dx=bx-ax, dy=by-ay;
+    const len2=dx*dx+dy*dy;
+    if (len2===0) return Math.hypot(px-ax,py-ay);
+    const t=Math.max(0,Math.min(1,((px-ax)*dx+(py-ay)*dy)/len2));
+    return Math.hypot(px-(ax+t*dx), py-(ay+t*dy));
+}
+
+// ── Draw ───────────────────────────────────────────────
+function redraw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const fl = currentFloor;
+
+    // Draw edges
+    edges[fl].forEach(e => {
+        const a = nodes[fl].find(n=>n.id===e.a);
+        const b = nodes[fl].find(n=>n.id===e.b);
+        if (!a||!b) return;
+        ctx.beginPath();
+        ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);
+        ctx.strokeStyle = 'rgba(88,166,255,0.8)';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([]);
+        ctx.stroke();
+    });
+
+    // Draw nodes
+    nodes[fl].forEach(n => {
+        const isPending = connectPending && connectPending.id === n.id;
+
+        // glow
+        ctx.beginPath(); ctx.arc(n.x,n.y,14,0,Math.PI*2);
+        ctx.fillStyle = isPending ? 'rgba(255,200,0,0.3)' : 'rgba(88,166,255,0.2)';
+        ctx.fill();
+
+        // circle
+        ctx.beginPath(); ctx.arc(n.x,n.y,8,0,Math.PI*2);
+        ctx.fillStyle = isPending ? '#ffd700' : '#58a6ff';
+        ctx.fill();
+        ctx.strokeStyle='white'; ctx.lineWidth=1.5; ctx.stroke();
+
+        // label
+        ctx.fillStyle='white'; ctx.font='bold 10px sans-serif';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(n.id, n.x, n.y);
+    });
+}
+
+function updateStats() {
+    let totalN=0, totalE=0;
+    for(let f=1;f<=5;f++){ totalN+=nodes[f].length; totalE+=edges[f].length; }
+    document.getElementById('statNodes').textContent = totalN;
+    document.getElementById('statEdges').textContent = totalE;
+}
+
+// ── Clear ──────────────────────────────────────────────
+function clearFloor() {
+    if (!confirm(`Clear all waypoints on Floor ${currentFloor}?`)) return;
+    nodes[currentFloor] = []; edges[currentFloor] = [];
+    connectPending = null; redraw(); updateStats();
+}
+function clearAll() {
+    if (!confirm('Clear ALL floors?')) return;
+    for(let f=1;f<=5;f++){nodes[f]=[]; edges[f]=[];}
+    connectPending=null; redraw(); updateStats();
+}
+
+// ── Export ─────────────────────────────────────────────
+function exportData() {
+    const lines = [];
+    lines.push('// ── Manually defined corridor network ──');
+    lines.push('const CORRIDOR_DATA = [');
+    for (let f=1;f<=5;f++) {
+        nodes[f].forEach(n => {
+            lines.push(`    { name: "${n.id}_F${f}", x: ${n.x}, y: ${n.y}, floor: ${f}, isCorridor: true },`);
+        });
+    }
+    lines.push('];');
+    lines.push('');
+    lines.push('const CORRIDOR_EDGES = [');
+    for (let f=1;f<=5;f++) {
+        edges[f].forEach(e => {
+            lines.push(`    { a: "${e.a}_F${f}", b: "${e.b}_F${f}" },`);
+        });
+    }
+    lines.push('];');
+
+    const text = lines.join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+        document.getElementById('statusBar').textContent = '✅ Copied to clipboard!';
+    });
+    const box = document.getElementById('outputBox');
+    box.style.display='block';
+    box.textContent = text;
+}
+
+// ── Init ────────────────────────────────────────────────
+switchFloor(1);
+setMode('add');
+</script>
+</body>
+</html>

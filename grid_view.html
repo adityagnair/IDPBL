@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { margin: 0; padding: 20px; font-family: sans-serif; }
+        .img-container { position: relative; display: inline-block; margin-bottom: 40px; }
+        canvas { position: absolute; top: 0; left: 0; pointer-events: none; }
+        img { display: block; }
+    </style>
+</head>
+<body>
+    <script>
+        const floors = ['floor1.jpeg', 'floor2.jpeg', 'floor3.jpeg', 'floor4.jpeg', 'floor5.jpeg'];
+        
+        floors.forEach((src, index) => {
+            document.write(`<h2>Floor ${index + 1}</h2>`);
+            document.write(`<div class="img-container" id="container${index}">`);
+            document.write(`<img id="img${index}" src="${src}" onload="drawGrid(${index})">`);
+            document.write(`<canvas id="canvas${index}"></canvas>`);
+            document.write(`</div>`);
+        });
+
+        function drawGrid(index) {
+            const img = document.getElementById(`img${index}`);
+            const canvas = document.getElementById(`canvas${index}`);
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
+            ctx.lineWidth = 1;
+            ctx.fillStyle = 'red';
+            ctx.font = '12px Arial';
+
+            const step = 200;
+            
+            for (let x = 0; x < canvas.width; x += step) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+                ctx.fillText(x, x + 5, 15);
+            }
+            
+            for (let y = 0; y < canvas.height; y += step) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+                if (y > 0) ctx.fillText(y, 5, y - 5);
+            }
+        }
+    </script>
+</body>
+</html>
