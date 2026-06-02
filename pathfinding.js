@@ -1,6 +1,6 @@
 /**
  * Pathfinding Algorithm
- * Uses Dijkstra's algorithm to find the shortest path between two rooms
+ * Uses A* algorithm to find the shortest path between two rooms
  */
 
 class Pathfinder {
