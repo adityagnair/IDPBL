@@ -1832,24 +1832,18 @@ class NavigationApp {
         this.currentFloor = 1;
         this.currentPath = null;
         this.currentPathDetails = null;
-        this.canvas = null;
-        this.ctx = null;
-        this.floorImage = null;
-        this.imageLoaded = false;
+        
         // State
         this.selectedDestination = null;
         this.selectedStart = null;
         this.allRoomsList = [];
         this.stepsCollapsed = false;
 
-        // Pan & Zoom State
-        this.scale = 1;
-        this.translateX = 0;
-        this.translateY = 0;
-        this.isDragging = false;
-        this.hasDragged = false;
-        this.dragStartX = 0;
-        this.dragStartY = 0;
+        // Viewers state
+        this.viewers = {
+            1: { scale: 1, translateX: 0, translateY: 0, isDragging: false, hasDragged: false, dragStartX: 0, dragStartY: 0, floor: 1 },
+            2: { scale: 1, translateX: 0, translateY: 0, isDragging: false, hasDragged: false, dragStartX: 0, dragStartY: 0, floor: 1 }
+        };
 
         this.initElements();
         this.setupCanvas();
@@ -1875,11 +1869,6 @@ class NavigationApp {
             
             floorButtons: document.querySelectorAll('.floor-btn'),
             
-            floorImage: document.getElementById('floorImage'),
-            pathCanvas: document.getElementById('pathCanvas'),
-            roomLabels: document.getElementById('roomLabels'),
-            imageWrapper: document.getElementById('imageWrapper'),
-            
             startLocationSelect: document.getElementById('startLocationSelect'),
             navigateBtn: document.getElementById('navigateBtn'),
             errorToast: document.getElementById('errorToast'),
@@ -1892,122 +1881,169 @@ class NavigationApp {
             pathSteps: document.getElementById('pathSteps')
         };
 
-        this.canvas = this.elements.pathCanvas;
-        this.ctx = this.canvas.getContext('2d');
-    }
-
-    setupCanvas() {
-        this.floorImage = new Image();
-        this.floorImage.onload = () => {
-            this.imageLoaded = true;
-            this.resizeCanvas();
-            this.centerAndFitMap();
-            this.drawCurrentFloor();
-        };
-        this.loadFloorImage(this.currentFloor);
-        window.addEventListener('resize', () => this.resizeCanvas());
-    }
-
-    loadFloorImage(floorNumber) {
-        const imageSrc = `floor${floorNumber}.jpeg`;
-        this.floorImage.src = imageSrc;
-        if (this.elements.floorImage) {
-            this.elements.floorImage.src = imageSrc;
+        // For backward compatibility
+        this.canvas = document.getElementById('pathCanvas1');
+        if (this.canvas) {
+            this.ctx = this.canvas.getContext('2d');
         }
     }
 
-    resizeCanvas() {
-        if (!this.imageLoaded) return;
-        const imgEl = this.elements.floorImage;
+    setupCanvas() {
+        this.floorImages = {
+            1: new Image(),
+            2: new Image()
+        };
+        this.imageLoaded = {
+            1: false,
+            2: false
+        };
+        
+        this.floorImages[1].onload = () => {
+            this.imageLoaded[1] = true;
+            this.resizeCanvas(1);
+            this.centerAndFitMap(1);
+        };
+        
+        this.floorImages[2].onload = () => {
+            this.imageLoaded[2] = true;
+            this.resizeCanvas(2);
+            this.centerAndFitMap(2);
+        };
+
+        this.loadFloorImage(1, this.currentFloor);
+        this.loadFloorImage(2, this.currentFloor);
+        
+        window.addEventListener('resize', () => {
+            this.resizeCanvas(1);
+            this.resizeCanvas(2);
+        });
+    }
+
+    loadFloorImage(id, floorNumber) {
+        this.viewers[id].floor = floorNumber;
+        const imageSrc = `floor${floorNumber}.jpeg`;
+        this.floorImages[id].src = imageSrc;
+        
+        const imgEl = document.getElementById(`floorImage${id}`);
+        if (imgEl) {
+            imgEl.src = imageSrc;
+        }
+        
+        const badge = document.getElementById(`floorBadge${id}`);
+        if (badge) {
+            badge.textContent = `Floor ${floorNumber}`;
+        }
+    }
+
+    resizeCanvas(id) {
+        if (!this.imageLoaded[id]) return;
+        const imgEl = document.getElementById(`floorImage${id}`);
+        const canvas = document.getElementById(`pathCanvas${id}`);
+        const wrapper = document.getElementById(`imageWrapper${id}`);
+        
+        if (!imgEl || !canvas || !wrapper) return;
+        
         const width = imgEl.naturalWidth;
         const height = imgEl.naturalHeight;
 
         if (!width || !height) return;
 
-        this.canvas.width = width;
-        this.canvas.height = height;
-        this.canvas.style.width = width + 'px';
-        this.canvas.style.height = height + 'px';
+        canvas.width = width;
+        canvas.height = height;
+        canvas.style.width = width + 'px';
+        canvas.style.height = height + 'px';
         
-        this.elements.imageWrapper.style.width = width + 'px';
-        this.elements.imageWrapper.style.height = height + 'px';
+        wrapper.style.width = width + 'px';
+        wrapper.style.height = height + 'px';
         
-        this.drawCurrentFloor();
+        this.drawFloorContent(id);
     }
 
-    centerAndFitMap() {
-        const viewer = document.getElementById('floorViewer');
-        const img = this.elements.floorImage;
+    centerAndFitMap(id) {
+        const viewer = document.getElementById(`floorViewer${id}`);
+        const img = this.floorImages[id];
+        const state = this.viewers[id];
         
-        if (!img.naturalWidth || !viewer.clientWidth) return;
+        if (!img || !img.naturalWidth || !viewer || !viewer.clientWidth) return;
         
         const scaleX = viewer.clientWidth / img.naturalWidth;
         const scaleY = viewer.clientHeight / img.naturalHeight;
         
-        this.scale = Math.min(scaleX, scaleY) * 0.9;
+        state.scale = Math.min(scaleX, scaleY) * 0.9;
         
-        const scaledWidth = img.naturalWidth * this.scale;
-        const scaledHeight = img.naturalHeight * this.scale;
+        const scaledWidth = img.naturalWidth * state.scale;
+        const scaledHeight = img.naturalHeight * state.scale;
         
-        this.translateX = (viewer.clientWidth - scaledWidth) / 2;
-        this.translateY = (viewer.clientHeight - scaledHeight) / 2;
+        state.translateX = (viewer.clientWidth - scaledWidth) / 2;
+        state.translateY = (viewer.clientHeight - scaledHeight) / 2;
         
-        this.updateTransform();
+        this.updateTransform(id);
     }
 
     setupPanZoom() {
-        const viewer = document.getElementById('floorViewer');
+        this.setupPanZoomForViewer(1);
+        this.setupPanZoomForViewer(2);
+    }
+
+    setupPanZoomForViewer(id) {
+        const viewer = document.getElementById(`floorViewer${id}`);
+        if (!viewer) return;
+        
+        const state = this.viewers[id];
 
         viewer.addEventListener('mousedown', (e) => {
             if (e.button !== 0) return;
-            this.isDragging = true;
-            this.hasDragged = false;
-            this.dragStartX = e.clientX - this.translateX;
-            this.dragStartY = e.clientY - this.translateY;
+            state.isDragging = true;
+            state.hasDragged = false;
+            state.dragStartX = e.clientX - state.translateX;
+            state.dragStartY = e.clientY - state.translateY;
             viewer.style.cursor = 'grabbing';
         });
 
         window.addEventListener('mousemove', (e) => {
-            if (!this.isDragging) return;
+            if (!state.isDragging) return;
             
-            if (Math.abs(e.clientX - this.dragStartX - this.translateX) > 3 || 
-                Math.abs(e.clientY - this.dragStartY - this.translateY) > 3) {
-                this.hasDragged = true;
+            if (Math.abs(e.clientX - state.dragStartX - state.translateX) > 3 || 
+                Math.abs(e.clientY - state.dragStartY - state.translateY) > 3) {
+                state.hasDragged = true;
             }
             
-            this.translateX = e.clientX - this.dragStartX;
-            this.translateY = e.clientY - this.dragStartY;
-            this.updateTransform();
+            state.translateX = e.clientX - state.dragStartX;
+            state.translateY = e.clientY - state.dragStartY;
+            this.updateTransform(id);
         });
 
         window.addEventListener('mouseup', () => {
-            this.isDragging = false;
+            state.isDragging = false;
             viewer.style.cursor = 'grab';
         });
 
         viewer.addEventListener('wheel', (e) => {
             e.preventDefault();
-            
             const rect = viewer.getBoundingClientRect();
             const mouseX = e.clientX - rect.left;
             const mouseY = e.clientY - rect.top;
 
             const zoomDirection = e.deltaY > 0 ? -1 : 1;
             const zoomSpeed = 0.15;
-            const newScale = Math.min(Math.max(0.1, this.scale + zoomDirection * zoomSpeed * this.scale), 5);
+            const newScale = Math.min(Math.max(0.1, state.scale + zoomDirection * zoomSpeed * state.scale), 5);
 
-            if (newScale !== this.scale) {
-                const scaleRatio = newScale / this.scale;
-                this.translateX = mouseX - (mouseX - this.translateX) * scaleRatio;
-                this.translateY = mouseY - (mouseY - this.translateY) * scaleRatio;
-                this.scale = newScale;
-                this.updateTransform();
+            if (newScale !== state.scale) {
+                const scaleRatio = newScale / state.scale;
+                state.translateX = mouseX - (mouseX - state.translateX) * scaleRatio;
+                state.translateY = mouseY - (mouseY - state.translateY) * scaleRatio;
+                state.scale = newScale;
+                this.updateTransform(id);
             }
         }, { passive: false });
     }
 
-    updateTransform() {
-        this.elements.imageWrapper.style.transform = `translate(${this.translateX}px, ${this.translateY}px) scale(${this.scale})`;
+    updateTransform(id) {
+        const state = this.viewers[id];
+        const wrapper = document.getElementById(`imageWrapper${id}`);
+        if (wrapper) {
+            wrapper.style.transform = `translate(${state.translateX}px, ${state.translateY}px) scale(${state.scale})`;
+        }
     }
 
     loadData() {
@@ -2052,7 +2088,6 @@ class NavigationApp {
             this.resetSearch();
         });
 
-        // Menu toggling
         if (this.elements.menuBtn && this.elements.dropdownMenu) {
             this.elements.menuBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -2060,14 +2095,12 @@ class NavigationApp {
             });
         }
 
-        // Steps panel collapsibility
         if (this.elements.collapseStepsBtn) {
             this.elements.collapseStepsBtn.addEventListener('click', () => {
                 this.toggleStepsCollapse();
             });
         }
 
-        // Hide dropdowns when clicking outside
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.search-container')) {
                 this.elements.searchResults.classList.add('hidden');
@@ -2077,7 +2110,6 @@ class NavigationApp {
             }
         });
 
-        // Navigate
         this.elements.navigateBtn.addEventListener('click', () => this.startNavigation());
     }
 
@@ -2116,19 +2148,17 @@ class NavigationApp {
         const roomData = getRoom(roomName);
         if (!roomData) return;
 
-        // Transition top bar to Route Mode
         this.elements.destBadge.textContent = roomName;
         this.elements.searchBox.classList.add('hidden');
         this.elements.routeBox.classList.remove('hidden');
         this.elements.searchContainer.classList.add('route-mode');
-        this.elements.startLocationSelect.value = ''; // reset start point
+        this.elements.startLocationSelect.value = ''; 
 
         this.hideError();
 
-        // Switch to that floor so user sees where it is
         this.switchFloor(roomData.floor);
-        this.clearPath(); // Clear any existing path
-        this.drawCurrentFloor();
+        this.clearPath();
+        this.drawFloorContent(1);
     }
 
     resetSearch() {
@@ -2137,7 +2167,6 @@ class NavigationApp {
         this.elements.clearSearchBtn.classList.add('hidden');
         this.elements.searchResults.classList.add('hidden');
         
-        // Reset top bar to Search Mode
         this.elements.searchContainer.classList.remove('route-mode');
         this.elements.routeBox.classList.add('hidden');
         this.elements.searchBox.classList.remove('hidden');
@@ -2145,10 +2174,6 @@ class NavigationApp {
         
         this.hideError();
         this.clearPath();
-    }
-
-    closeLocationPanel() {
-        this.resetSearch();
     }
 
     closeStepsPanel() {
@@ -2159,9 +2184,17 @@ class NavigationApp {
         if (btnIcon) {
             btnIcon.className = 'fa-solid fa-chevron-right';
         }
+        
+        const wrapper = document.getElementById('mapViewersWrapper');
+        const viewer2 = document.getElementById('floorViewer2');
+        if (wrapper && viewer2) {
+            wrapper.classList.remove('dual-view');
+            viewer2.classList.add('hidden');
+        }
+
         setTimeout(() => {
-            this.resizeCanvas();
-            this.centerAndFitMap();
+            this.resizeCanvas(1);
+            this.centerAndFitMap(1);
         }, 300);
     }
 
@@ -2192,8 +2225,10 @@ class NavigationApp {
         }
         
         setTimeout(() => {
-            this.resizeCanvas();
-            this.centerAndFitMap();
+            this.resizeCanvas(1);
+            this.centerAndFitMap(1);
+            this.resizeCanvas(2);
+            this.centerAndFitMap(2);
         }, 300);
     }
 
@@ -2222,7 +2257,6 @@ class NavigationApp {
         
         this.hideError();
         
-        // Reset collapse state on starting new navigation
         this.stepsCollapsed = false;
         this.elements.stepsPanel.classList.remove('collapsed');
         const btnIcon = this.elements.collapseStepsBtn.querySelector('i');
@@ -2232,10 +2266,31 @@ class NavigationApp {
 
         this.displaySteps();
         
-        // Go to start floor
         const startRoom = getRoom(start);
+        const endRoom = getRoom(end);
         if (startRoom) {
             this.switchFloor(startRoom.floor);
+        }
+
+        const wrapper = document.getElementById('mapViewersWrapper');
+        const viewer2 = document.getElementById('floorViewer2');
+        if (startRoom && endRoom && startRoom.floor !== endRoom.floor) {
+            wrapper.classList.add('dual-view');
+            viewer2.classList.remove('hidden');
+            
+            this.loadFloorImage(2, endRoom.floor);
+            
+            setTimeout(() => {
+                this.resizeCanvas(1);
+                this.centerAndFitMap(1);
+                this.resizeCanvas(2);
+                this.centerAndFitMap(2);
+            }, 300);
+        } else {
+            if (wrapper && viewer2) {
+                wrapper.classList.remove('dual-view');
+                viewer2.classList.add('hidden');
+            }
         }
     }
 
@@ -2276,8 +2331,10 @@ class NavigationApp {
         this.elements.stepsPanel.classList.remove('hidden');
         
         setTimeout(() => {
-            this.resizeCanvas();
-            this.centerAndFitMap();
+            this.resizeCanvas(1);
+            this.centerAndFitMap(1);
+            this.resizeCanvas(2);
+            this.centerAndFitMap(2);
         }, 300);
     }
 
@@ -2291,9 +2348,9 @@ class NavigationApp {
             }
         });
 
-        this.loadFloorImage(floorNumber);
+        this.loadFloorImage(1, floorNumber);
         setTimeout(() => {
-            this.resizeCanvas();
+            this.resizeCanvas(1);
         }, 50);
     }
 
@@ -2301,57 +2358,67 @@ class NavigationApp {
         this.currentPath = null;
         this.currentPathDetails = null;
         this.elements.stepsPanel.classList.add('hidden');
-        this.drawCurrentFloor();
+        
+        const wrapper = document.getElementById('mapViewersWrapper');
+        const viewer2 = document.getElementById('floorViewer2');
+        if (wrapper && viewer2) {
+            wrapper.classList.remove('dual-view');
+            viewer2.classList.add('hidden');
+        }
+
+        this.drawFloorContent(1);
     }
 
-    drawCurrentFloor() {
-        if (!this.imageLoaded) return;
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    drawFloorContent(id) {
+        if (!this.imageLoaded[id]) return;
+        const canvas = document.getElementById(`pathCanvas${id}`);
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         
         if (this.currentPath) {
-            this.drawPath();
+            this.drawPathForViewer(id, canvas, ctx);
         } else {
-            this.displayRoomLabels();
+            this.displayRoomLabelsForViewer(id);
         }
     }
 
-    drawPath() {
+    drawPathForViewer(id, canvas, ctx) {
         const path = this.currentPath.path;
-        const scaleX = this.canvas.width / this.floorImage.width;
-        const scaleY = this.canvas.height / this.floorImage.height;
+        const scaleX = canvas.width / this.floorImages[id].width;
+        const scaleY = canvas.height / this.floorImages[id].height;
+        const viewerFloor = this.viewers[id].floor;
 
         const onFloor = [];
         for (let i = 0; i < path.length; i++) {
             const roomData = getRoom(path[i]);
             const isOnFloor = roomData && (
-                roomData.floor === this.currentFloor ||
-                (roomData.floors && roomData.floors.includes(this.currentFloor))
+                roomData.floor === viewerFloor ||
+                (roomData.floors && roomData.floors.includes(viewerFloor))
             );
             if (isOnFloor) onFloor.push({ name: path[i], data: roomData });
         }
 
         if (onFloor.length === 0) {
-            this.displayRoomLabels();
+            this.displayRoomLabelsForViewer(id);
             return;
         }
 
-        // Draw path line
-        this.ctx.strokeStyle = 'rgba(67, 97, 238, 0.9)';
-        this.ctx.lineWidth = 6;
-        this.ctx.lineCap  = 'round';
-        this.ctx.lineJoin = 'round';
-        this.ctx.setLineDash([15, 10]);
+        ctx.strokeStyle = 'rgba(67, 97, 238, 0.9)';
+        ctx.lineWidth = 6;
+        ctx.lineCap  = 'round';
+        ctx.lineJoin = 'round';
+        ctx.setLineDash([15, 10]);
 
-        this.ctx.beginPath();
+        ctx.beginPath();
         onFloor.forEach((node, i) => {
             const x = node.data.x * scaleX;
             const y = node.data.y * scaleY;
-            if (i === 0) this.ctx.moveTo(x, y);
-            else         this.ctx.lineTo(x, y);
+            if (i === 0) ctx.moveTo(x, y);
+            else         ctx.lineTo(x, y);
         });
-        this.ctx.stroke();
+        ctx.stroke();
 
-        // Draw indicator nodes
         onFloor.forEach((node) => {
             if (node.name.startsWith('_')) return;
             const x = node.data.x * scaleX;
@@ -2360,32 +2427,37 @@ class NavigationApp {
             const isStart = node.name === this.currentPathDetails.start;
             const isEnd   = node.name === this.currentPathDetails.end;
 
-            this.ctx.beginPath();
-            this.ctx.arc(x, y, 14, 0, 2 * Math.PI);
-            this.ctx.fillStyle = isStart ? 'rgba(76,175,80,0.3)'
+            ctx.beginPath();
+            ctx.arc(x, y, 14, 0, 2 * Math.PI);
+            ctx.fillStyle = isStart ? 'rgba(76,175,80,0.3)'
                                : isEnd   ? 'rgba(247,37,133,0.3)'
                                          : 'rgba(67,97,238,0.2)';
-            this.ctx.fill();
+            ctx.fill();
 
-            this.ctx.beginPath();
-            this.ctx.arc(x, y, 8, 0, 2 * Math.PI);
-            this.ctx.fillStyle = isStart ? '#4caf50' : isEnd ? '#f72585' : '#4361ee';
-            this.ctx.fill();
-            this.ctx.strokeStyle = 'white';
-            this.ctx.lineWidth = 3;
-            this.ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(x, y, 8, 0, 2 * Math.PI);
+            ctx.fillStyle = isStart ? '#4caf50' : isEnd ? '#f72585' : '#4361ee';
+            ctx.fill();
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 3;
+            ctx.stroke();
         });
 
-        this.displayRoomLabels();
+        this.displayRoomLabelsForViewer(id);
     }
 
-    displayRoomLabels() {
-        this.elements.roomLabels.innerHTML = '';
-        if (!this.imageLoaded) return;
+    displayRoomLabelsForViewer(id) {
+        const labelsContainer = document.getElementById(`roomLabels${id}`);
+        const canvas = document.getElementById(`pathCanvas${id}`);
+        if (!labelsContainer || !canvas) return;
 
-        const roomsOnFloor = getRoomsByFloor(this.currentFloor);
-        const scaleX = this.canvas.width / this.floorImage.width;
-        const scaleY = this.canvas.height / this.floorImage.height;
+        labelsContainer.innerHTML = '';
+        if (!this.imageLoaded[id]) return;
+
+        const viewerFloor = this.viewers[id].floor;
+        const roomsOnFloor = getRoomsByFloor(viewerFloor);
+        const scaleX = canvas.width / this.floorImages[id].width;
+        const scaleY = canvas.height / this.floorImages[id].height;
 
         const startRoom = this.currentPathDetails ? getRoom(this.currentPathDetails.start) : null;
         const endRoom = this.currentPathDetails ? getRoom(this.currentPathDetails.end) : null;
@@ -2397,12 +2469,12 @@ class NavigationApp {
                 label.className = 'room-label';
 
                 if (this.currentPath) {
-                    if (startRoom && name === this.currentPathDetails.start && startRoom.floor === this.currentFloor) {
+                    if (startRoom && name === this.currentPathDetails.start && startRoom.floor === viewerFloor) {
                         label.classList.add('start');
-                    } else if (endRoom && name === this.currentPathDetails.end && endRoom.floor === this.currentFloor) {
+                    } else if (endRoom && name === this.currentPathDetails.end && endRoom.floor === viewerFloor) {
                         label.classList.add('end');
                     }
-                } else if (this.selectedDestination === name && coords.floor === this.currentFloor) {
+                } else if (this.selectedDestination === name && coords.floor === viewerFloor) {
                     label.classList.add('end');
                 }
 
@@ -2412,13 +2484,13 @@ class NavigationApp {
                 
                 label.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    if (!this.hasDragged) {
+                    if (!this.viewers[id].hasDragged) {
                         this.selectDestination(name);
                     }
                 });
                 label.style.cursor = 'pointer';
 
-                this.elements.roomLabels.appendChild(label);
+                labelsContainer.appendChild(label);
             }
         });
     }
@@ -2426,11 +2498,6 @@ class NavigationApp {
 
 document.addEventListener('DOMContentLoaded', () => {
     window.app = new NavigationApp();
-});
-```
-
----
-
 ### 6. [coord_picker.html](file:///d:/Programing%20class/github/IDT/IDPBL%20%281%29/IDPBL/coord_picker.html)
 Interactive helper page for locating pixel targets relative to floor images and copying the JS output directly into `buildingData.js`.
 

@@ -95,16 +95,25 @@
         <!-- Main Content Area -->
         <main class="main-content">
             <!-- Map Container -->
-            <div class="map-area">
-                <div class="floor-viewer" id="floorViewer">
-                    <div class="image-wrapper" id="imageWrapper">
-                        <img id="floorImage" src="floor1.jpeg" alt="Floor Plan">
-                        <canvas id="pathCanvas" class="path-canvas"></canvas>
-                        <div id="roomLabels" class="room-labels"></div>
+            <div class="map-area" id="mapArea">
+                <div class="map-viewers-wrapper" id="mapViewersWrapper">
+                    <div class="floor-viewer" id="floorViewer1">
+                        <div class="image-wrapper" id="imageWrapper1">
+                            <img id="floorImage1" src="floor1.jpeg" alt="Floor Plan">
+                            <canvas id="pathCanvas1" class="path-canvas"></canvas>
+                            <div id="roomLabels1" class="room-labels"></div>
+                        </div>
+                        <div class="floor-badge" id="floorBadge1">Floor 1</div>
+                    </div>
+                    <div class="floor-viewer hidden" id="floorViewer2">
+                        <div class="image-wrapper" id="imageWrapper2">
+                            <img id="floorImage2" src="floor1.jpeg" alt="Floor Plan">
+                            <canvas id="pathCanvas2" class="path-canvas"></canvas>
+                            <div id="roomLabels2" class="room-labels"></div>
+                        </div>
+                        <div class="floor-badge" id="floorBadge2">Floor 1</div>
                     </div>
                 </div>
-
-
             </div>
 
             <!-- Right Panel: Navigation Steps (Pops up when navigating) -->

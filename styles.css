@@ -594,6 +594,49 @@ body {
 
 .map-area:active { cursor: grabbing; }
 
+.map-viewers-wrapper {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    gap: 15px;
+    background: #e9ecef;
+    padding: 10px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.map-viewers-wrapper.dual-view .floor-viewer {
+    width: 50%;
+    flex: 1;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+.map-viewers-wrapper:not(.dual-view) .floor-viewer {
+    width: 100%;
+    flex: 1;
+}
+
+.floor-badge {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(43, 45, 66, 0.85);
+    backdrop-filter: blur(8px);
+    color: white;
+    padding: 8px 16px;
+    border-radius: var(--radius-pill);
+    font-weight: 700;
+    font-size: 0.85em;
+    z-index: 100;
+    box-shadow: var(--shadow-sm);
+    letter-spacing: 0.5px;
+    pointer-events: none;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .floor-viewer {
     width: 100%;
     height: 100%;
@@ -907,6 +950,13 @@ body {
     
     .main-content {
         flex-direction: column;
+    }
+    .map-viewers-wrapper.dual-view {
+        flex-direction: column;
+    }
+    .map-viewers-wrapper.dual-view .floor-viewer {
+        width: 100%;
+        height: 50%;
     }
     .right-panel {
         width: 100%;
