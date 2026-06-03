@@ -725,13 +725,12 @@ body.dark-mode .theme-toggle-btn:hover {
     display: block;
     user-select: none;
     pointer-events: none;
-    transition: filter 0.3s ease, opacity 0.3s ease;
+    transition: filter 0.3s ease;
 }
 
 body.dark-mode .floor-viewer img {
-    filter: invert(1);
+    filter: invert(1) brightness(1.5) contrast(1.5);
     mix-blend-mode: screen;
-    opacity: 0.85;
 }
 
 .image-wrapper {
