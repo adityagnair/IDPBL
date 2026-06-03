@@ -11,7 +11,7 @@ This document contains the complete context, architectural breakdown, and raw so
 This project was built by:
 *   **Aditya G Nair**
 *   **Akula Vaenkata Saye Chandan**
-*   **B. Gayathri Prajwal**
+*   **Bandarupalli Gayathri Prajwal**
 *   **Guthikonda Navatej**
 
 Released under the [MIT License](LICENSE).
