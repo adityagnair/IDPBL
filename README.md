@@ -1,182 +1,149 @@
-## 🏢 Building Navigation System
+# 🏢 SmartNav: Indoor Building Navigation System
 
-An interactive web-based navigation system for multi-floor buildings with pathfinding between any two locations.
-
-### Features
-
-✅ **Interactive Floor Plans** - View all 5 floors of your building
-✅ **Shortest Path Algorithm** - Uses Dijkstra's algorithm to find optimal routes
-✅ **Multi-Floor Navigation** - Automatically routes through stairs/elevators between floors
-✅ **Visual Path Display** - See the path highlighted directly on the floor plan image
-✅ **Room Search** - Find any room in the building from dropdown
-✅ **Step-by-Step Directions** - Clear instructions for navigating between locations
-✅ **Responsive Design** - Works on desktop and mobile devices
-
-### Getting Started
-
-1. **Update Room Coordinates** in `buildingData.js`:
-   - Open each floor image (floor1.jpeg through floor5.jpeg)
-   - Identify room names and their pixel coordinates
-   - Update the coordinates in `buildingData.js` for each floor
-   - Each room needs `{x, y, floor}` coordinates
-
-2. **Open in Browser**:
-   ```bash
-   # Simply open index.html in your web browser
-   # Or serve with a local server:
-   python -m http.server 8000
-   # Then visit http://localhost:8000
-   ```
-
-3. **Use the App**:
-   - Select a start location from the dropdown
-   - Select an end location
-   - Click "Find Shortest Path"
-   - View the highlighted path on the floor plan
-   - Follow the step-by-step directions
-
-### File Structure
-
-```
-.
-├── index.html          # Main HTML file
-├── styles.css          # Styling for the UI
-├── app.js              # Main application logic
-├── buildingData.js     # Building structure and room definitions
-├── pathfinding.js      # Dijkstra's algorithm implementation
-├── floor1.jpeg         # Floor 1 image
-├── floor2.jpeg         # Floor 2 image
-├── floor3.jpeg         # Floor 3 image
-├── floor4.jpeg         # Floor 4 image
-├── floor5.jpeg         # Floor 5 image
-└── README.md           # This file
-```
-
-### How to Configure Your Building
-
-#### Step 1: Analyze Floor Plans
-Open each floor image and identify:
-- Room names (visible in image)
-- Staircase locations
-- Elevator locations
-- Approximate pixel coordinates for each room
-
-#### Step 2: Update buildingData.js
-
-For each floor, update the room coordinates:
-
-```javascript
-2: {
-    name: "Floor 2",
-    rooms: {
-        "Office 201": { x: 100, y: 150, floor: 2 },
-        "Office 202": { x: 250, y: 150, floor: 2 },
-        "Lab 201": { x: 350, y: 150, floor: 2 },
-        // ... more rooms
-    }
-}
-```
-
-**Coordinate Tips:**
-- `x` = horizontal distance in pixels from left edge
-- `y` = vertical distance in pixels from top edge
-- Use browser developer tools to measure pixel positions
-- Be as accurate as possible for better pathfinding
-
-#### Step 3: Update Stairs/Elevator Positions
-
-Update the stairs and elevator locations (ensure they're on all floors):
-
-```javascript
-stairs: [
-    { x: 550, y: 200, floors: [1, 2, 3, 4, 5] }
-],
-
-elevators: [
-    { x: 520, y: 250, floors: [1, 2, 3, 4, 5] }
-]
-```
-
-### Algorithm Details
-
-#### Dijkstra's Algorithm
-- Finds the shortest path between two locations
-- Considers distance between rooms
-- Weights stairs/elevators differently
-
-#### Multi-Floor Navigation
-1. Find path to stairs/elevator on current floor
-2. Navigate up/down through staircase
-3. Find path to destination on target floor
-
-#### Room Connectivity
-- Rooms on the same floor are connected if within 400 pixels
-- All rooms connect to nearby stairs/elevators
-- Stairs/elevators connect all floors they serve
-
-### Path Display
-
-The system displays:
-- **Green point** - Starting location
-- **Red point** - Destination
-- **Blue line** - Path to follow
-- **Blue points** - Intermediate waypoints
-- **Step-by-step directions** - In the sidebar
-
-### Customization
-
-#### Change Colors
-Edit `styles.css`:
-```css
-.btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-```
-
-#### Add More Features
-- Add wheelchair accessibility indicators
-- Add time estimates
-- Add real-time updates
-- Integrate with wayfinding kiosks
-
-### Troubleshooting
-
-**Path not found?**
-- Check that rooms are properly connected in buildingData.js
-- Ensure stairs/elevators span all floors
-- Verify room coordinates are accurate
-
-**Coordinates not matching?**
-- Use browser inspector (F12) to check image dimensions
-- Remember coordinates are relative to image size
-- Test with a simple path first
-
-**Canvas not displaying path?**
-- Check browser console for errors
-- Ensure image is loaded before drawing
-- Verify floor image files are in correct location
-
-### Browser Support
-
-- Chrome/Edge (recommended)
-- Firefox
-- Safari
-- Mobile browsers (iOS Safari, Chrome Mobile)
-
-### Future Enhancements
-
-- [ ] Real-time location tracking
-- [ ] Integration with beacons/WiFi
-- [ ] Accessible routes for wheelchairs
-- [ ] Multiple building support
-- [ ] Time-based scheduling (avoid busy times)
-- [ ] 3D building visualization
-- [ ] Print directions
-
-### License
-
-This project is open source and available under the MIT License.
+SmartNav is a lightweight, interactive, client-side indoor navigation system designed for multi-floor buildings. Using custom coordinate mapping and pathfinding algorithms, it helps users locate rooms and guides them step-by-step through corridors, staircases, and elevators.
 
 ---
 
-**Need help?** Check the browser console (F12) for detailed debug information.
+## 🛠️ Tech Stack
+
+The application is built entirely using vanilla web technologies, requiring no compile steps, external database, or server dependencies.
+
+![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)
+![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
+![Canvas API](https://img.shields.io/badge/Canvas_API-000000?style=for-the-badge&logo=html5&logoColor=white)
+![Font Awesome](https://img.shields.io/badge/Font_Awesome-339AF0?style=for-the-badge&logo=fontawesome&logoColor=white)
+
+*   **Structure:** Semantic HTML5
+*   **Styling:** Custom CSS3 with responsive layout, linear gradients, and a cohesive dark/glassmorphic interface.
+*   **Fonts & Icons:** Google Fonts (Outfit) and Font Awesome 6.4.0.
+*   **Logic:** Clean ES6 Object-Oriented JavaScript.
+*   **Drawing & Map Rendering:** HTML5 Canvas API for real-time path overlays and dynamic scaling.
+
+---
+
+## ✨ Key Features
+
+*   🔄 **Multi-Floor Routing:** Seamlessly computes paths that change floors, routing through available vertical transit nodes (stairs and elevators).
+*   🚀 **A\* & Dijkstra Pathfinding:** Uses an optimized **A\*** (A-Star) pathfinding algorithm (with Euclidean distance heuristics) to calculate routes, keeping a fallback **Dijkstra** implementation for verification.
+*   🔍 **Interactive Floor Map:** A zoomable, pannable floor plan viewer utilizing mouse drag/wheel controls or touch gestures.
+*   🏷️ **Dynamic Room Labels:** Interactive map pins that double as clickable destination selectors.
+*   📝 **Step-by-Step Directions:** Generates a list of instructions detailing start points, corridor transits, stair/elevator floor transitions, and arrival states.
+*   🛠️ **Integrated Creator Utilities:** Includes built-in developer tools to pick coordinates on floor images and lay out corridor waypoint nodes.
+
+---
+
+## 📂 Repository File Structure
+
+```text
+.
+├── index.html              # Main application user interface
+├── styles.css              # Custom styles and responsive layouts
+├── app.js                  # Main UI controller, canvas renderer, and event handlers
+├── pathfinding.js          # A* / Dijkstra pathfinder and route details builder
+├── buildingData.js         # Map coordinate nodes, rooms, stairs, and elevators
+├── coord_picker.html       # Utility to map pixel positions on floor plan images
+├── corridor_editor.html    # Utility to layout corridor nodes and orthogonal lines
+├── grid_view.html          # Utility that overlays a 200px coordinate grid onto floors
+├── view_floors.html        # Simple preview layout of all floor image assets
+├── floor1.jpeg             # Background floor plan image for Floor 1
+├── floor2.jpeg             # Background floor plan image for Floor 2
+├── floor3.jpeg             # Background floor plan image for Floor 3
+├── floor4.jpeg             # Background floor plan image for Floor 4
+└── floor5.jpeg             # Background floor plan image for Floor 5
+```
+
+---
+
+## 🚀 Getting Started
+
+Since the project is completely serverless and dependency-free, it doesn't use package managers (like npm or pip). You can run it locally in seconds:
+
+### Option A: Local File System (Double-click)
+1. Clone or download this repository.
+2. Double-click the [index.html](file:///d:/Programing%20class/github/IDT/IDPBL%20%281%29/IDPBL/index.html) file to open the application directly in your web browser.
+
+### Option B: Local Web Server (Recommended)
+To prevent local CORS warnings in some browsers when loading assets:
+*   **Python:** Run `python -m http.server 8000` in the directory, then visit `http://localhost:8000`.
+*   **Node.js:** Run `npx serve` or install `live-server`, then navigate to the hosted port.
+*   **VS Code:** Install the **Live Server** extension and click **Go Live**.
+
+---
+
+## 💻 Usage & Code Snippets
+
+### 1. Finding the Shortest Path Programmatically
+You can compute routes in JavaScript using the `Pathfinder` class:
+
+```javascript
+// Ensure buildingData.js and pathfinding.js are loaded
+const pf = new Pathfinder();
+
+// Compute the shortest route between Floor 1 and Floor 2 rooms
+const startRoom = "AB203";              // Floor 1 room
+const endRoom = "MCA Staff Room";       // Floor 2 room
+
+const pathResult = pf.findShortestPath(startRoom, endRoom);
+
+if (pathResult) {
+    console.log("Path Nodes:", pathResult.path);
+    // Output: ["AB203", "_DOOR_AB203", "_CB_1_519", ..., "MCA Staff Room"]
+    console.log("Calculated Distance:", pathResult.distance, "pixels");
+} else {
+    console.warn("No valid route found.");
+}
+```
+
+### 2. Extracting Step-by-Step Directions
+Format the coordinate array path output into user-friendly instructions:
+
+```javascript
+const routeDetails = pf.getPathDetails(pathResult);
+
+console.log("Start Room Floor:", routeDetails.floors[0]);
+console.log("End Room Floor:", routeDetails.floors[routeDetails.floors.length - 1]);
+console.log("Floor Sequence:", routeDetails.floorChanges); // e.g. "1 → 2"
+
+routeDetails.steps.forEach((step, idx) => {
+    // Type can be: 'start', 'move', 'stairs', or 'end'
+    console.log(`${idx + 1}. [${step.type.toUpperCase()}] ${step.description}`);
+});
+/* Output:
+   1. [START] Start at AB203
+   2. [STAIRS] Take Main Staircase up to Floor 2
+   3. [END] Arrive at MCA Staff Room
+*/
+```
+
+### 3. Adding New Rooms in `buildingData.js`
+Room coordinates can be appended directly within the `BUILDING_DATA` object:
+
+```javascript
+const BUILDING_DATA = {
+    1: {
+        name: "Floor 1",
+        rooms: {
+            "New Lab Office": { x: 480, y: 320, floor: 1 },
+            // Add additional rooms with their pixel coordinates...
+        }
+    },
+    // ...
+};
+```
+
+---
+
+## 🛠️ Map Configuration & Creator Utilities
+
+To customize or expand this mapping system for your own buildings:
+
+1.  **Grid View Layout (`grid_view.html`):** Open this helper page to view all floor plans overlaid with a 200px red grid. Helpful for estimating room pixel coordinates.
+2.  **Room Coordinate Picker (`coord_picker.html`):** Load your floor plans, click on room names in the sidebar, and click on the floor image to accurately pinpoint room locations. Press **📋 Copy buildingData.js** to generate the JavaScript configuration file.
+3.  **Corridor Path Editor (`corridor_editor.html`):** Place waypoints, connect them, and export corridor path strings to keep corridor navigation restricted to right angles (orthogonal layouts).
+
+---
+
+## 📜 License
+
+This project is open-source and released under the [MIT License](https://opensource.org/licenses/MIT).
