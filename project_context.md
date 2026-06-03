@@ -190,11 +190,15 @@ The primary layout file containing the search bar, floor selectors, canvas viewe
             </div>
 
             <!-- Right Panel: Navigation Steps (Pops up when navigating) -->
-            <div id="stepsPanel" class="side-panel right-panel hidden">
-                <button class="close-panel-btn" onclick="app.closeStepsPanel()"><i class="fa-solid fa-xmark"></i></button>
-                <h3>Navigation Steps</h3>
-                <div id="pathSteps" class="steps-list">
-                    <!-- Steps will be populated here -->
+            <div id="stepsPanel" class="right-panel hidden">
+                <button class="collapse-toggle-btn" id="collapseStepsBtn" title="Toggle Steps Panel">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+                <div class="panel-inner">
+                    <h3>Navigation Steps</h3>
+                    <div id="pathSteps" class="steps-list">
+                        <!-- Steps will be populated here -->
+                    </div>
                 </div>
             </div>
         </main>
@@ -890,41 +894,74 @@ body {
 
 
 /* ================== SIDE PANELS ================== */
-.side-panel {
-    position: absolute;
-    top: 20px;
-    background: var(--surface);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lg);
-    width: 350px;
-    padding: 25px;
-    z-index: 100;
-    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
-}
-
-.left-panel {
-    left: 20px;
-    transform: translateX(0);
-}
-
-.left-panel.hidden {
-    transform: translateX(-120%);
-    opacity: 0;
-    pointer-events: none;
-}
-
 .right-panel {
-    right: 20px;
-    transform: translateX(0);
-    max-height: calc(100vh - 120px);
+    position: relative;
+    width: 350px;
+    height: 100%;
     display: flex;
     flex-direction: column;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+    flex-shrink: 0;
+    z-index: 100;
+}
+
+.panel-inner {
+    width: 100%;
+    height: 100%;
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    box-shadow: var(--shadow-lg);
+    box-sizing: border-box;
 }
 
 .right-panel.hidden {
-    transform: translateX(120%);
+    width: 0;
     opacity: 0;
     pointer-events: none;
+}
+
+.right-panel.collapsed {
+    width: 0;
+}
+
+.right-panel.collapsed .panel-inner {
+    border-left: none;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.collapse-toggle-btn {
+    position: absolute;
+    left: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 60px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-right: none;
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    box-shadow: -4px 0 10px rgba(0, 0, 0, 0.05);
+    z-index: 101;
+    transition: all 0.2s ease;
+}
+
+.collapse-toggle-btn:hover {
+    color: var(--primary);
+    background: #f4f6f8;
+}
+
+.right-panel.hidden .collapse-toggle-btn {
+    display: none;
 }
 
 .close-panel-btn {
@@ -1089,9 +1126,41 @@ body {
     .logo span { display: none; }
     .search-container { width: 60%; }
     .floor-label { display: none; }
-    .side-panel { width: calc(100% - 40px); left: 20px; right: 20px; }
-    .left-panel { top: 20px; }
-    .right-panel { top: auto; bottom: 20px; max-height: 50vh; }
+    
+    .main-content {
+        flex-direction: column;
+    }
+    .right-panel {
+        width: 100%;
+        height: 250px;
+        transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+    }
+    .right-panel.hidden {
+        width: 100%;
+        height: 0;
+    }
+    .right-panel.collapsed {
+        width: 100%;
+        height: 0;
+    }
+    .right-panel.collapsed .panel-inner {
+        border-top: none;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+    .panel-inner {
+        border-left: none;
+        border-top: 1px solid var(--border);
+    }
+    .collapse-toggle-btn {
+        left: 50%;
+        top: -20px;
+        transform: translateX(-50%) rotate(90deg);
+        width: 20px;
+        height: 50px;
+        border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+        box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.05);
+    }
 }
 ```
 
@@ -1771,6 +1840,7 @@ class NavigationApp {
         this.selectedDestination = null;
         this.selectedStart = null;
         this.allRoomsList = [];
+        this.stepsCollapsed = false;
 
         // Pan & Zoom State
         this.scale = 1;
@@ -1816,6 +1886,7 @@ class NavigationApp {
             
             menuBtn: document.getElementById('menuBtn'),
             dropdownMenu: document.getElementById('dropdownMenu'),
+            collapseStepsBtn: document.getElementById('collapseStepsBtn'),
             
             stepsPanel: document.getElementById('stepsPanel'),
             pathSteps: document.getElementById('pathSteps')
@@ -1989,6 +2060,13 @@ class NavigationApp {
             });
         }
 
+        // Steps panel collapsibility
+        if (this.elements.collapseStepsBtn) {
+            this.elements.collapseStepsBtn.addEventListener('click', () => {
+                this.toggleStepsCollapse();
+            });
+        }
+
         // Hide dropdowns when clicking outside
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.search-container')) {
@@ -2075,6 +2153,48 @@ class NavigationApp {
 
     closeStepsPanel() {
         this.elements.stepsPanel.classList.add('hidden');
+        this.stepsCollapsed = false;
+        this.elements.stepsPanel.classList.remove('collapsed');
+        const btnIcon = this.elements.collapseStepsBtn.querySelector('i');
+        if (btnIcon) {
+            btnIcon.className = 'fa-solid fa-chevron-right';
+        }
+        setTimeout(() => {
+            this.resizeCanvas();
+            this.centerAndFitMap();
+        }, 300);
+    }
+
+    toggleStepsCollapse() {
+        const panel = this.elements.stepsPanel;
+        const btnIcon = this.elements.collapseStepsBtn.querySelector('i');
+        
+        this.stepsCollapsed = !this.stepsCollapsed;
+        
+        if (this.stepsCollapsed) {
+            panel.classList.add('collapsed');
+            if (btnIcon) {
+                if (window.innerWidth <= 768) {
+                    btnIcon.className = 'fa-solid fa-chevron-up';
+                } else {
+                    btnIcon.className = 'fa-solid fa-chevron-left';
+                }
+            }
+        } else {
+            panel.classList.remove('collapsed');
+            if (btnIcon) {
+                if (window.innerWidth <= 768) {
+                    btnIcon.className = 'fa-solid fa-chevron-down';
+                } else {
+                    btnIcon.className = 'fa-solid fa-chevron-right';
+                }
+            }
+        }
+        
+        setTimeout(() => {
+            this.resizeCanvas();
+            this.centerAndFitMap();
+        }, 300);
     }
 
     startNavigation() {
@@ -2101,6 +2221,15 @@ class NavigationApp {
         this.currentPathDetails = pathfinder.getPathDetails(result);
         
         this.hideError();
+        
+        // Reset collapse state on starting new navigation
+        this.stepsCollapsed = false;
+        this.elements.stepsPanel.classList.remove('collapsed');
+        const btnIcon = this.elements.collapseStepsBtn.querySelector('i');
+        if (btnIcon) {
+            btnIcon.className = 'fa-solid fa-chevron-right';
+        }
+
         this.displaySteps();
         
         // Go to start floor
@@ -2145,6 +2274,11 @@ class NavigationApp {
 
         this.elements.pathSteps.innerHTML = html;
         this.elements.stepsPanel.classList.remove('hidden');
+        
+        setTimeout(() => {
+            this.resizeCanvas();
+            this.centerAndFitMap();
+        }, 300);
     }
 
     switchFloor(floorNumber) {

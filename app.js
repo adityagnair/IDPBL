@@ -16,6 +16,7 @@ class NavigationApp {
         this.selectedDestination = null;
         this.selectedStart = null;
         this.allRoomsList = [];
+        this.stepsCollapsed = false;
 
         // Pan & Zoom State
         this.scale = 1;
@@ -61,6 +62,7 @@ class NavigationApp {
             
             menuBtn: document.getElementById('menuBtn'),
             dropdownMenu: document.getElementById('dropdownMenu'),
+            collapseStepsBtn: document.getElementById('collapseStepsBtn'),
             
             stepsPanel: document.getElementById('stepsPanel'),
             pathSteps: document.getElementById('pathSteps')
@@ -242,6 +244,13 @@ class NavigationApp {
             });
         }
 
+        // Steps panel collapsibility
+        if (this.elements.collapseStepsBtn) {
+            this.elements.collapseStepsBtn.addEventListener('click', () => {
+                this.toggleStepsCollapse();
+            });
+        }
+
         // Hide dropdowns when clicking outside
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.search-container')) {
@@ -328,6 +337,48 @@ class NavigationApp {
 
     closeStepsPanel() {
         this.elements.stepsPanel.classList.add('hidden');
+        this.stepsCollapsed = false;
+        this.elements.stepsPanel.classList.remove('collapsed');
+        const btnIcon = this.elements.collapseStepsBtn.querySelector('i');
+        if (btnIcon) {
+            btnIcon.className = 'fa-solid fa-chevron-right';
+        }
+        setTimeout(() => {
+            this.resizeCanvas();
+            this.centerAndFitMap();
+        }, 300);
+    }
+
+    toggleStepsCollapse() {
+        const panel = this.elements.stepsPanel;
+        const btnIcon = this.elements.collapseStepsBtn.querySelector('i');
+        
+        this.stepsCollapsed = !this.stepsCollapsed;
+        
+        if (this.stepsCollapsed) {
+            panel.classList.add('collapsed');
+            if (btnIcon) {
+                if (window.innerWidth <= 768) {
+                    btnIcon.className = 'fa-solid fa-chevron-up';
+                } else {
+                    btnIcon.className = 'fa-solid fa-chevron-left';
+                }
+            }
+        } else {
+            panel.classList.remove('collapsed');
+            if (btnIcon) {
+                if (window.innerWidth <= 768) {
+                    btnIcon.className = 'fa-solid fa-chevron-down';
+                } else {
+                    btnIcon.className = 'fa-solid fa-chevron-right';
+                }
+            }
+        }
+        
+        setTimeout(() => {
+            this.resizeCanvas();
+            this.centerAndFitMap();
+        }, 300);
     }
 
     startNavigation() {
@@ -354,6 +405,15 @@ class NavigationApp {
         this.currentPathDetails = pathfinder.getPathDetails(result);
         
         this.hideError();
+        
+        // Reset collapse state on starting new navigation
+        this.stepsCollapsed = false;
+        this.elements.stepsPanel.classList.remove('collapsed');
+        const btnIcon = this.elements.collapseStepsBtn.querySelector('i');
+        if (btnIcon) {
+            btnIcon.className = 'fa-solid fa-chevron-right';
+        }
+
         this.displaySteps();
         
         // Go to start floor
@@ -398,6 +458,11 @@ class NavigationApp {
 
         this.elements.pathSteps.innerHTML = html;
         this.elements.stepsPanel.classList.remove('hidden');
+        
+        setTimeout(() => {
+            this.resizeCanvas();
+            this.centerAndFitMap();
+        }, 300);
     }
 
     switchFloor(floorNumber) {

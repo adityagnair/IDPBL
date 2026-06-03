@@ -108,11 +108,15 @@
             </div>
 
             <!-- Right Panel: Navigation Steps (Pops up when navigating) -->
-            <div id="stepsPanel" class="side-panel right-panel hidden">
-                <button class="close-panel-btn" onclick="app.closeStepsPanel()"><i class="fa-solid fa-xmark"></i></button>
-                <h3>Navigation Steps</h3>
-                <div id="pathSteps" class="steps-list">
-                    <!-- Steps will be populated here -->
+            <div id="stepsPanel" class="right-panel hidden">
+                <button class="collapse-toggle-btn" id="collapseStepsBtn" title="Toggle Steps Panel">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+                <div class="panel-inner">
+                    <h3>Navigation Steps</h3>
+                    <div id="pathSteps" class="steps-list">
+                        <!-- Steps will be populated here -->
+                    </div>
                 </div>
             </div>
         </main>
