@@ -259,13 +259,13 @@ The application stylesheet controlling styling, responsiveness, typography, layo
 }
 
 body.dark-mode {
-    --bg-color: #0c0e17;
-    --surface: #161824;
-    --text-main: #f3f4f6;
-    --text-muted: #9ca3af;
-    --border: #242936;
-    --control-bg: #1f2335;
-    --map-bg: #090a0f;
+    --bg-color: #121526;
+    --surface: #1e223b;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --border: #2f355c;
+    --control-bg: #282d4f;
+    --map-bg: #16192d;
     --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.4);
     --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.5);
@@ -554,7 +554,7 @@ body.dark-mode .intro-card p {
 }
 
 .btn-cancel-nav:hover {
-    background: rgba(0, 0, 0, 0.05);
+    background: var(--control-bg);
     color: var(--end-color);
 }
 
@@ -959,22 +959,33 @@ body.dark-mode .theme-toggle-btn:hover {
 }
 
 .floor-viewer img {
-    transition: filter 0.3s ease;
+    display: block;
+    user-select: none;
+    pointer-events: none;
+    transition: filter 0.3s ease, opacity 0.3s ease;
 }
 
 body.dark-mode .floor-viewer img {
-    filter: invert(0.9) hue-rotate(180deg) brightness(1.2) contrast(1.25);
+    filter: invert(1);
+    mix-blend-mode: screen;
+    opacity: 0.85;
 }
 
 .image-wrapper {
     position: absolute;
     transform-origin: 0 0;
+    transition: box-shadow 0.3s ease, border-color 0.3s ease, background-color 0.3s ease;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--surface);
 }
 
-#floorImage {
-    display: block;
-    user-select: none;
-    pointer-events: none;
+body.dark-mode .image-wrapper {
+    background: #1f2238; /* Matches surface color or slightly adjusted to look premium */
+    border-color: #2f355c;
+    box-shadow: var(--shadow-lg);
 }
 
 .path-canvas {
@@ -1098,7 +1109,7 @@ body.dark-mode .floor-viewer img {
 
 .collapse-toggle-btn:hover {
     color: var(--primary);
-    background: #f4f6f8;
+    background: var(--control-bg);
 }
 
 .right-panel.hidden .collapse-toggle-btn {
@@ -1150,7 +1161,7 @@ body.dark-mode .floor-viewer img {
 }
 
 .start-selection {
-    background: #f8f9fa;
+    background: var(--control-bg);
     padding: 15px;
     border-radius: var(--radius-sm);
     margin-bottom: 25px;
@@ -1168,14 +1179,16 @@ body.dark-mode .floor-viewer img {
 .modern-select {
     width: 100%;
     padding: 12px;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     font-family: 'Outfit', sans-serif;
     font-weight: 500;
     font-size: 0.95em;
     outline: none;
-    background: white;
+    background: var(--surface);
+    color: var(--text-main);
     cursor: pointer;
+    transition: var(--theme-transition);
 }
 
 .modern-select:focus {
@@ -1216,6 +1229,11 @@ body.dark-mode .floor-viewer img {
     font-weight: 500;
     font-size: 0.9em;
     text-align: center;
+}
+
+body.dark-mode .error-msg {
+    background: #2d1618;
+    color: #ef4444;
 }
 
 /* ================== STEPS LIST ================== */
@@ -2041,7 +2059,7 @@ class NavigationApp {
         const body = document.body;
         const btnIcon = this.elements.themeToggleBtn ? this.elements.themeToggleBtn.querySelector('i') : null;
         
-        this.pathColor = this.theme === 'dark' ? '#4cc9f0' : 'rgba(67, 97, 238, 0.9)';
+        this.pathColor = this.theme === 'dark' ? '#80e2ff' : 'rgba(67, 97, 238, 0.9)';
 
         if (this.theme === 'dark') {
             body.classList.add('dark-mode');
@@ -2079,7 +2097,7 @@ class NavigationApp {
         } else {
             body.classList.add('dark-mode');
             this.theme = 'dark';
-            this.pathColor = '#4cc9f0';
+            this.pathColor = '#80e2ff';
             if (btnIcon) {
                 btnIcon.className = 'fa-solid fa-sun';
             }
@@ -2670,12 +2688,12 @@ class NavigationApp {
             ctx.arc(x, y, 14, 0, 2 * Math.PI);
             ctx.fillStyle = isStart ? 'rgba(76,175,80,0.3)'
                                : isEnd   ? 'rgba(247,37,133,0.3)'
-                                         : (this.theme === 'dark' ? 'rgba(76, 201, 240, 0.3)' : 'rgba(67,97,238,0.2)');
+                                         : (this.theme === 'dark' ? 'rgba(128, 226, 255, 0.3)' : 'rgba(67,97,238,0.2)');
             ctx.fill();
 
             ctx.beginPath();
             ctx.arc(x, y, 8, 0, 2 * Math.PI);
-            ctx.fillStyle = isStart ? '#4caf50' : isEnd ? '#f72585' : (this.theme === 'dark' ? '#4cc9f0' : '#4361ee');
+            ctx.fillStyle = isStart ? '#4caf50' : isEnd ? '#f72585' : (this.theme === 'dark' ? '#80e2ff' : '#4361ee');
             ctx.fill();
             ctx.strokeStyle = 'white';
             ctx.lineWidth = 3;
