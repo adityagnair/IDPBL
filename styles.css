@@ -87,6 +87,14 @@ body,
     visibility: hidden;
 }
 
+body.dark-mode .intro-overlay {
+    background: rgba(12, 14, 23, 0.85);
+}
+
+body.dark-mode .intro-card p {
+    color: #4cc9f0;
+}
+
 .intro-card {
     background: var(--surface);
     padding: 50px;

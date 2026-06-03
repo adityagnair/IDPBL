@@ -92,6 +92,11 @@ The primary layout file containing the search bar, floor selectors, canvas viewe
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <script>
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+        }
+    </script>
     <!-- Intro Overlay -->
     <div id="introOverlay" class="intro-overlay">
         <div class="intro-card">
@@ -318,6 +323,14 @@ body,
 .intro-overlay.hidden {
     opacity: 0;
     visibility: hidden;
+}
+
+body.dark-mode .intro-overlay {
+    background: rgba(12, 14, 23, 0.85);
+}
+
+body.dark-mode .intro-card p {
+    color: #4cc9f0;
 }
 
 .intro-card {
