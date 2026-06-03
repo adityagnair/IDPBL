@@ -84,6 +84,8 @@ const BUILDING_DATA = {
     elevators: [
         { x: 1053, y: 1138, floors: [1, 2, 3, 4, 5], name: "Elevator 1" },
         { x: 1197, y: 894, floors: [1, 2, 3, 4, 5], name: "Elevator 2" },
+        { x: 779, y: 419, floors: [1, 2, 3, 4, 5], name: "Elevator 3" },
+        { x: 401, y: 681, floors: [1, 2, 3, 4, 5], name: "Elevator 4" },
     ]
 };
 
