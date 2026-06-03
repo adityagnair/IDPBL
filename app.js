@@ -22,6 +22,7 @@ class NavigationApp {
         };
 
         this.initElements();
+        this.initTheme();
         this.setupCanvas();
         this.setupPanZoom();
         this.loadData();
@@ -52,6 +53,7 @@ class NavigationApp {
             menuBtn: document.getElementById('menuBtn'),
             dropdownMenu: document.getElementById('dropdownMenu'),
             collapseStepsBtn: document.getElementById('collapseStepsBtn'),
+            themeToggleBtn: document.getElementById('themeToggleBtn'),
             
             stepsPanel: document.getElementById('stepsPanel'),
             pathSteps: document.getElementById('pathSteps')
@@ -62,6 +64,60 @@ class NavigationApp {
         if (this.canvas) {
             this.ctx = this.canvas.getContext('2d');
         }
+    }
+
+    initTheme() {
+        this.theme = localStorage.getItem('theme') || 'light';
+        const body = document.body;
+        const btnIcon = this.elements.themeToggleBtn ? this.elements.themeToggleBtn.querySelector('i') : null;
+        
+        if (this.theme === 'dark') {
+            body.classList.add('dark-mode');
+            if (btnIcon) {
+                btnIcon.className = 'fa-solid fa-sun';
+            }
+            if (this.elements.themeToggleBtn) {
+                this.elements.themeToggleBtn.title = 'Toggle Theme (Light Mode)';
+            }
+        } else {
+            body.classList.remove('dark-mode');
+            if (btnIcon) {
+                btnIcon.className = 'fa-solid fa-moon';
+            }
+            if (this.elements.themeToggleBtn) {
+                this.elements.themeToggleBtn.title = 'Toggle Theme (Dark Mode)';
+            }
+        }
+    }
+
+    toggleTheme() {
+        const body = document.body;
+        const btnIcon = this.elements.themeToggleBtn ? this.elements.themeToggleBtn.querySelector('i') : null;
+        
+        if (body.classList.contains('dark-mode')) {
+            body.classList.remove('dark-mode');
+            this.theme = 'light';
+            if (btnIcon) {
+                btnIcon.className = 'fa-solid fa-moon';
+            }
+            if (this.elements.themeToggleBtn) {
+                this.elements.themeToggleBtn.title = 'Toggle Theme (Dark Mode)';
+            }
+        } else {
+            body.classList.add('dark-mode');
+            this.theme = 'dark';
+            if (btnIcon) {
+                btnIcon.className = 'fa-solid fa-sun';
+            }
+            if (this.elements.themeToggleBtn) {
+                this.elements.themeToggleBtn.title = 'Toggle Theme (Light Mode)';
+            }
+        }
+        localStorage.setItem('theme', this.theme);
+        
+        // Redraw canvas contents for theme updates
+        this.drawFloorContent(1);
+        this.drawFloorContent(2);
     }
 
     setupCanvas() {
@@ -280,6 +336,13 @@ class NavigationApp {
         if (this.elements.collapseStepsBtn) {
             this.elements.collapseStepsBtn.addEventListener('click', () => {
                 this.toggleStepsCollapse();
+            });
+        }
+
+        // Theme toggle
+        if (this.elements.themeToggleBtn) {
+            this.elements.themeToggleBtn.addEventListener('click', () => {
+                this.toggleTheme();
             });
         }
 

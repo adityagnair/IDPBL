@@ -6,6 +6,8 @@
     --text-main: #2b2d42;
     --text-muted: #8d99ae;
     --border: #edf2f4;
+    --control-bg: #f4f6f8;
+    --map-bg: #e9ecef;
     --start-color: #4caf50;
     --end-color: #f72585;
     --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.05);
@@ -15,6 +17,20 @@
     --radius-md: 16px;
     --radius-lg: 24px;
     --radius-pill: 50px;
+    --theme-transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+body.dark-mode {
+    --bg-color: #0c0e17;
+    --surface: #161824;
+    --text-main: #f3f4f6;
+    --text-muted: #9ca3af;
+    --border: #242936;
+    --control-bg: #1f2335;
+    --map-bg: #090a0f;
+    --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.5);
 }
 
 * {
@@ -34,6 +50,23 @@ body {
     overflow: hidden; /* Prevent body scroll, everything happens in app */
     height: 100vh;
     width: 100vw;
+    transition: var(--theme-transition);
+}
+
+/* Theme Transitions */
+body, 
+.top-bar, 
+.search-container input, 
+.route-box, 
+.floor-selector, 
+.panel-inner, 
+.dropdown-menu, 
+.floor-btn, 
+.theme-toggle-btn, 
+.room-label, 
+.route-select, 
+.step-card {
+    transition: var(--theme-transition);
 }
 
 /* ================== INTRO OVERLAY ================== */
@@ -179,7 +212,7 @@ body {
     gap: 12px;
     width: 100%;
     height: 100%;
-    background: #f4f6f8;
+    background: var(--control-bg);
     border: 2px solid var(--border);
     border-radius: var(--radius-pill);
     padding: 6px 10px 6px 15px;
@@ -197,7 +230,7 @@ body {
     padding: 8px 12px;
     border: 1px solid var(--border);
     border-radius: var(--radius-pill);
-    background: white;
+    background: var(--surface);
     color: var(--text-main);
     font-family: 'Outfit', sans-serif;
     font-weight: 600;
@@ -313,6 +346,17 @@ body {
     pointer-events: none;
 }
 
+body.dark-mode .error-toast {
+    background: #2d1618;
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.2);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-mode .error-toast::before {
+    color: #ef4444;
+}
+
 .search-container input {
     width: 100%;
     padding: 14px 45px 14px 45px;
@@ -322,7 +366,7 @@ body {
     font-weight: 500;
     outline: none;
     transition: all 0.3s ease;
-    background: #f4f6f8;
+    background: var(--control-bg);
     color: var(--text-main);
 }
 
@@ -388,7 +432,7 @@ body {
 
 .search-item:last-child { border-bottom: none; }
 .search-item:hover {
-    background: #f8f9fa;
+    background: var(--control-bg);
     color: var(--primary);
 }
 
@@ -402,7 +446,7 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
-    background: #f4f6f8;
+    background: var(--control-bg);
     padding: 6px 12px;
     border-radius: var(--radius-pill);
 }
@@ -436,6 +480,30 @@ body {
     background: var(--primary);
     color: white;
     box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3);
+}
+
+.theme-toggle-btn {
+    background: none;
+    border: none;
+    font-size: 1.2em;
+    color: var(--text-main);
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.theme-toggle-btn:hover {
+    background: rgba(67, 97, 238, 0.1);
+    color: var(--primary);
+    transform: rotate(15deg);
+}
+
+body.dark-mode .theme-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
 }
 
 .menu-btn {
@@ -587,7 +655,7 @@ body {
 .map-area {
     flex: 1;
     position: relative;
-    background: #e9ecef;
+    background: var(--map-bg);
     overflow: hidden;
     cursor: grab;
 }
@@ -599,7 +667,7 @@ body {
     width: 100%;
     height: 100%;
     gap: 15px;
-    background: #e9ecef;
+    background: var(--map-bg);
     padding: 10px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -642,6 +710,14 @@ body {
     height: 100%;
     position: relative;
     transform-origin: 0 0;
+}
+
+.floor-viewer img {
+    transition: filter 0.3s ease;
+}
+
+body.dark-mode .floor-viewer img {
+    filter: invert(0.9) hue-rotate(180deg) brightness(0.85) contrast(1.1);
 }
 
 .image-wrapper {
@@ -908,7 +984,7 @@ body {
 
 .steps-list::-webkit-scrollbar { width: 6px; }
 .steps-list::-webkit-scrollbar-track { background: transparent; }
-.steps-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+.steps-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
 
 .step-card {
     display: flex;

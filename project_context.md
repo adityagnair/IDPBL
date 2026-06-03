@@ -147,6 +147,9 @@ The primary layout file containing the search bar, floor selectors, canvas viewe
                     <button class="floor-btn" data-floor="4">4</button>
                     <button class="floor-btn" data-floor="5">5</button>
                 </div>
+                <button class="theme-toggle-btn" id="themeToggleBtn" title="Toggle Theme">
+                    <i class="fa-solid fa-moon"></i>
+                </button>
                 <div class="menu-container">
                     <button class="menu-btn" id="menuBtn" title="Menu"><i class="fa-solid fa-bars"></i></button>
                     <div class="dropdown-menu hidden" id="dropdownMenu">
@@ -177,16 +180,25 @@ The primary layout file containing the search bar, floor selectors, canvas viewe
         <!-- Main Content Area -->
         <main class="main-content">
             <!-- Map Container -->
-            <div class="map-area">
-                <div class="floor-viewer" id="floorViewer">
-                    <div class="image-wrapper" id="imageWrapper">
-                        <img id="floorImage" src="floor1.jpeg" alt="Floor Plan">
-                        <canvas id="pathCanvas" class="path-canvas"></canvas>
-                        <div id="roomLabels" class="room-labels"></div>
+            <div class="map-area" id="mapArea">
+                <div class="map-viewers-wrapper" id="mapViewersWrapper">
+                    <div class="floor-viewer" id="floorViewer1">
+                        <div class="image-wrapper" id="imageWrapper1">
+                            <img id="floorImage1" src="floor1.jpeg" alt="Floor Plan">
+                            <canvas id="pathCanvas1" class="path-canvas"></canvas>
+                            <div id="roomLabels1" class="room-labels"></div>
+                        </div>
+                        <div class="floor-badge" id="floorBadge1">Floor 1</div>
+                    </div>
+                    <div class="floor-viewer hidden" id="floorViewer2">
+                        <div class="image-wrapper" id="imageWrapper2">
+                            <img id="floorImage2" src="floor1.jpeg" alt="Floor Plan">
+                            <canvas id="pathCanvas2" class="path-canvas"></canvas>
+                            <div id="roomLabels2" class="room-labels"></div>
+                        </div>
+                        <div class="floor-badge" id="floorBadge2">Floor 1</div>
                     </div>
                 </div>
-
-
             </div>
 
             <!-- Right Panel: Navigation Steps (Pops up when navigating) -->
@@ -213,7 +225,6 @@ The primary layout file containing the search bar, floor selectors, canvas viewe
 </body>
 </html>
 ```
-
 ---
 
 ### 2. [styles.css](file:///d:/Programing%20class/github/IDT/IDPBL%20%281%29/IDPBL/styles.css)
@@ -228,6 +239,8 @@ The application stylesheet controlling styling, responsiveness, typography, layo
     --text-main: #2b2d42;
     --text-muted: #8d99ae;
     --border: #edf2f4;
+    --control-bg: #f4f6f8;
+    --map-bg: #e9ecef;
     --start-color: #4caf50;
     --end-color: #f72585;
     --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.05);
@@ -237,6 +250,20 @@ The application stylesheet controlling styling, responsiveness, typography, layo
     --radius-md: 16px;
     --radius-lg: 24px;
     --radius-pill: 50px;
+    --theme-transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+body.dark-mode {
+    --bg-color: #0c0e17;
+    --surface: #161824;
+    --text-main: #f3f4f6;
+    --text-muted: #9ca3af;
+    --border: #242936;
+    --control-bg: #1f2335;
+    --map-bg: #090a0f;
+    --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.5);
 }
 
 * {
@@ -253,9 +280,26 @@ The application stylesheet controlling styling, responsiveness, typography, layo
 body {
     background-color: var(--bg-color);
     color: var(--text-main);
-    overflow: hidden; /* Prevent body scroll */
+    overflow: hidden; /* Prevent body scroll, everything happens in app */
     height: 100vh;
     width: 100vw;
+    transition: var(--theme-transition);
+}
+
+/* Theme Transitions */
+body, 
+.top-bar, 
+.search-container input, 
+.route-box, 
+.floor-selector, 
+.panel-inner, 
+.dropdown-menu, 
+.floor-btn, 
+.theme-toggle-btn, 
+.room-label, 
+.route-select, 
+.step-card {
+    transition: var(--theme-transition);
 }
 
 /* ================== INTRO OVERLAY ================== */
@@ -401,7 +445,7 @@ body {
     gap: 12px;
     width: 100%;
     height: 100%;
-    background: #f4f6f8;
+    background: var(--control-bg);
     border: 2px solid var(--border);
     border-radius: var(--radius-pill);
     padding: 6px 10px 6px 15px;
@@ -419,7 +463,7 @@ body {
     padding: 8px 12px;
     border: 1px solid var(--border);
     border-radius: var(--radius-pill);
-    background: white;
+    background: var(--surface);
     color: var(--text-main);
     font-family: 'Outfit', sans-serif;
     font-weight: 600;
@@ -535,6 +579,17 @@ body {
     pointer-events: none;
 }
 
+body.dark-mode .error-toast {
+    background: #2d1618;
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.2);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-mode .error-toast::before {
+    color: #ef4444;
+}
+
 .search-container input {
     width: 100%;
     padding: 14px 45px 14px 45px;
@@ -544,7 +599,7 @@ body {
     font-weight: 500;
     outline: none;
     transition: all 0.3s ease;
-    background: #f4f6f8;
+    background: var(--control-bg);
     color: var(--text-main);
 }
 
@@ -610,7 +665,7 @@ body {
 
 .search-item:last-child { border-bottom: none; }
 .search-item:hover {
-    background: #f8f9fa;
+    background: var(--control-bg);
     color: var(--primary);
 }
 
@@ -624,7 +679,7 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
-    background: #f4f6f8;
+    background: var(--control-bg);
     padding: 6px 12px;
     border-radius: var(--radius-pill);
 }
@@ -658,6 +713,30 @@ body {
     background: var(--primary);
     color: white;
     box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3);
+}
+
+.theme-toggle-btn {
+    background: none;
+    border: none;
+    font-size: 1.2em;
+    color: var(--text-main);
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.theme-toggle-btn:hover {
+    background: rgba(67, 97, 238, 0.1);
+    color: var(--primary);
+    transform: rotate(15deg);
+}
+
+body.dark-mode .theme-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
 }
 
 .menu-btn {
@@ -809,18 +888,69 @@ body {
 .map-area {
     flex: 1;
     position: relative;
-    background: #e9ecef;
+    background: var(--map-bg);
     overflow: hidden;
     cursor: grab;
 }
 
 .map-area:active { cursor: grabbing; }
 
+.map-viewers-wrapper {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    gap: 15px;
+    background: var(--map-bg);
+    padding: 10px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.map-viewers-wrapper.dual-view .floor-viewer {
+    width: 50%;
+    flex: 1;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+.map-viewers-wrapper:not(.dual-view) .floor-viewer {
+    width: 100%;
+    flex: 1;
+}
+
+.floor-badge {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(43, 45, 66, 0.85);
+    backdrop-filter: blur(8px);
+    color: white;
+    padding: 8px 16px;
+    border-radius: var(--radius-pill);
+    font-weight: 700;
+    font-size: 0.85em;
+    z-index: 100;
+    box-shadow: var(--shadow-sm);
+    letter-spacing: 0.5px;
+    pointer-events: none;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .floor-viewer {
     width: 100%;
     height: 100%;
     position: relative;
     transform-origin: 0 0;
+}
+
+.floor-viewer img {
+    transition: filter 0.3s ease;
+}
+
+body.dark-mode .floor-viewer img {
+    filter: invert(0.9) hue-rotate(180deg) brightness(0.85) contrast(1.1);
 }
 
 .image-wrapper {
@@ -890,8 +1020,6 @@ body {
     z-index: 20;
     transform: translate(-50%, -50%) scale(1.1);
 }
-
-
 
 /* ================== SIDE PANELS ================== */
 .right-panel {
@@ -985,7 +1113,7 @@ body {
     margin-bottom: 8px;
 }
 
-.side-panel h3 {
+.right-panel h3 {
     font-size: 1.8em;
     font-weight: 700;
     color: var(--text-main);
@@ -1087,7 +1215,7 @@ body {
 
 .steps-list::-webkit-scrollbar { width: 6px; }
 .steps-list::-webkit-scrollbar-track { background: transparent; }
-.steps-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+.steps-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
 
 .step-card {
     display: flex;
@@ -1129,6 +1257,13 @@ body {
     
     .main-content {
         flex-direction: column;
+    }
+    .map-viewers-wrapper.dual-view {
+        flex-direction: column;
+    }
+    .map-viewers-wrapper.dual-view .floor-viewer {
+        width: 100%;
+        height: 50%;
     }
     .right-panel {
         width: 100%;
@@ -1814,8 +1949,6 @@ class Pathfinder {
 const pathfinder = new Pathfinder();
 console.log('✅ Pathfinding system initialized');
 console.log(`📡 Graph nodes: ${Object.keys(pathfinder.graph).length}`);
-```
-
 ---
 
 ### 5. [app.js](file:///d:/Programing%20class/github/IDT/IDPBL%20%281%29/IDPBL/app.js)
@@ -1846,6 +1979,7 @@ class NavigationApp {
         };
 
         this.initElements();
+        this.initTheme();
         this.setupCanvas();
         this.setupPanZoom();
         this.loadData();
@@ -1876,6 +2010,7 @@ class NavigationApp {
             menuBtn: document.getElementById('menuBtn'),
             dropdownMenu: document.getElementById('dropdownMenu'),
             collapseStepsBtn: document.getElementById('collapseStepsBtn'),
+            themeToggleBtn: document.getElementById('themeToggleBtn'),
             
             stepsPanel: document.getElementById('stepsPanel'),
             pathSteps: document.getElementById('pathSteps')
@@ -1886,6 +2021,60 @@ class NavigationApp {
         if (this.canvas) {
             this.ctx = this.canvas.getContext('2d');
         }
+    }
+
+    initTheme() {
+        this.theme = localStorage.getItem('theme') || 'light';
+        const body = document.body;
+        const btnIcon = this.elements.themeToggleBtn ? this.elements.themeToggleBtn.querySelector('i') : null;
+        
+        if (this.theme === 'dark') {
+            body.classList.add('dark-mode');
+            if (btnIcon) {
+                btnIcon.className = 'fa-solid fa-sun';
+            }
+            if (this.elements.themeToggleBtn) {
+                this.elements.themeToggleBtn.title = 'Toggle Theme (Light Mode)';
+            }
+        } else {
+            body.classList.remove('dark-mode');
+            if (btnIcon) {
+                btnIcon.className = 'fa-solid fa-moon';
+            }
+            if (this.elements.themeToggleBtn) {
+                this.elements.themeToggleBtn.title = 'Toggle Theme (Dark Mode)';
+            }
+        }
+    }
+
+    toggleTheme() {
+        const body = document.body;
+        const btnIcon = this.elements.themeToggleBtn ? this.elements.themeToggleBtn.querySelector('i') : null;
+        
+        if (body.classList.contains('dark-mode')) {
+            body.classList.remove('dark-mode');
+            this.theme = 'light';
+            if (btnIcon) {
+                btnIcon.className = 'fa-solid fa-moon';
+            }
+            if (this.elements.themeToggleBtn) {
+                this.elements.themeToggleBtn.title = 'Toggle Theme (Dark Mode)';
+            }
+        } else {
+            body.classList.add('dark-mode');
+            this.theme = 'dark';
+            if (btnIcon) {
+                btnIcon.className = 'fa-solid fa-sun';
+            }
+            if (this.elements.themeToggleBtn) {
+                this.elements.themeToggleBtn.title = 'Toggle Theme (Light Mode)';
+            }
+        }
+        localStorage.setItem('theme', this.theme);
+        
+        // Redraw canvas contents for theme updates
+        this.drawFloorContent(1);
+        this.drawFloorContent(2);
     }
 
     setupCanvas() {
@@ -2047,6 +2236,7 @@ class NavigationApp {
     }
 
     loadData() {
+        // Wait for dependencies if necessary
         setTimeout(() => {
             if (typeof getRoomsAsArray !== 'undefined') {
                 this.allRoomsList = getRoomsAsArray().filter(r => !r.startsWith('_'));
@@ -2066,10 +2256,12 @@ class NavigationApp {
     }
 
     setupEventListeners() {
+        // Intro
         this.elements.startNavBtn.addEventListener('click', () => {
             this.elements.introOverlay.classList.add('hidden');
         });
 
+        // Floor Buttons
         this.elements.floorButtons.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const floorNum = parseInt(e.target.dataset.floor);
@@ -2077,6 +2269,7 @@ class NavigationApp {
             });
         });
 
+        // Search
         this.elements.searchInput.addEventListener('input', (e) => this.handleSearch(e.target.value));
         this.elements.searchInput.addEventListener('focus', (e) => this.handleSearch(e.target.value));
         
@@ -2088,6 +2281,7 @@ class NavigationApp {
             this.resetSearch();
         });
 
+        // Menu toggling
         if (this.elements.menuBtn && this.elements.dropdownMenu) {
             this.elements.menuBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -2095,12 +2289,21 @@ class NavigationApp {
             });
         }
 
+        // Steps panel collapsibility
         if (this.elements.collapseStepsBtn) {
             this.elements.collapseStepsBtn.addEventListener('click', () => {
                 this.toggleStepsCollapse();
             });
         }
 
+        // Theme toggle
+        if (this.elements.themeToggleBtn) {
+            this.elements.themeToggleBtn.addEventListener('click', () => {
+                this.toggleTheme();
+            });
+        }
+
+        // Hide dropdowns when clicking outside
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.search-container')) {
                 this.elements.searchResults.classList.add('hidden');
@@ -2110,6 +2313,7 @@ class NavigationApp {
             }
         });
 
+        // Navigate
         this.elements.navigateBtn.addEventListener('click', () => this.startNavigation());
     }
 
@@ -2148,17 +2352,19 @@ class NavigationApp {
         const roomData = getRoom(roomName);
         if (!roomData) return;
 
+        // Transition top bar to Route Mode
         this.elements.destBadge.textContent = roomName;
         this.elements.searchBox.classList.add('hidden');
         this.elements.routeBox.classList.remove('hidden');
         this.elements.searchContainer.classList.add('route-mode');
-        this.elements.startLocationSelect.value = ''; 
+        this.elements.startLocationSelect.value = ''; // reset start point
 
         this.hideError();
 
+        // Switch to that floor so user sees where it is
         this.switchFloor(roomData.floor);
-        this.clearPath();
-        this.drawFloorContent(1);
+        this.clearPath(); // Clear any existing path
+        this.drawCurrentFloor();
     }
 
     resetSearch() {
@@ -2167,6 +2373,7 @@ class NavigationApp {
         this.elements.clearSearchBtn.classList.add('hidden');
         this.elements.searchResults.classList.add('hidden');
         
+        // Reset top bar to Search Mode
         this.elements.searchContainer.classList.remove('route-mode');
         this.elements.routeBox.classList.add('hidden');
         this.elements.searchBox.classList.remove('hidden');
@@ -2174,6 +2381,10 @@ class NavigationApp {
         
         this.hideError();
         this.clearPath();
+    }
+
+    closeLocationPanel() {
+        this.resetSearch();
     }
 
     closeStepsPanel() {
@@ -2185,6 +2396,7 @@ class NavigationApp {
             btnIcon.className = 'fa-solid fa-chevron-right';
         }
         
+        // Hide dual view
         const wrapper = document.getElementById('mapViewersWrapper');
         const viewer2 = document.getElementById('floorViewer2');
         if (wrapper && viewer2) {
@@ -2257,6 +2469,7 @@ class NavigationApp {
         
         this.hideError();
         
+        // Reset collapse state on starting new navigation
         this.stepsCollapsed = false;
         this.elements.stepsPanel.classList.remove('collapsed');
         const btnIcon = this.elements.collapseStepsBtn.querySelector('i');
@@ -2266,20 +2479,25 @@ class NavigationApp {
 
         this.displaySteps();
         
+        // Go to start floor on viewer 1
         const startRoom = getRoom(start);
         const endRoom = getRoom(end);
         if (startRoom) {
             this.switchFloor(startRoom.floor);
         }
 
+        // Handle dual floor layout
         const wrapper = document.getElementById('mapViewersWrapper');
         const viewer2 = document.getElementById('floorViewer2');
         if (startRoom && endRoom && startRoom.floor !== endRoom.floor) {
+            // Show dual view
             wrapper.classList.add('dual-view');
             viewer2.classList.remove('hidden');
             
+            // Set end floor to viewer 2
             this.loadFloorImage(2, endRoom.floor);
             
+            // Re-fit maps
             setTimeout(() => {
                 this.resizeCanvas(1);
                 this.centerAndFitMap(1);
@@ -2287,6 +2505,7 @@ class NavigationApp {
                 this.centerAndFitMap(2);
             }, 300);
         } else {
+            // Hide dual view
             if (wrapper && viewer2) {
                 wrapper.classList.remove('dual-view');
                 viewer2.classList.add('hidden');
@@ -2359,6 +2578,7 @@ class NavigationApp {
         this.currentPathDetails = null;
         this.elements.stepsPanel.classList.add('hidden');
         
+        // Hide dual view
         const wrapper = document.getElementById('mapViewersWrapper');
         const viewer2 = document.getElementById('floorViewer2');
         if (wrapper && viewer2) {
@@ -2404,6 +2624,7 @@ class NavigationApp {
             return;
         }
 
+        // Draw line
         ctx.strokeStyle = 'rgba(67, 97, 238, 0.9)';
         ctx.lineWidth = 6;
         ctx.lineCap  = 'round';
@@ -2419,6 +2640,7 @@ class NavigationApp {
         });
         ctx.stroke();
 
+        // Draw dots
         onFloor.forEach((node) => {
             if (node.name.startsWith('_')) return;
             const x = node.data.x * scaleX;
@@ -2498,6 +2720,9 @@ class NavigationApp {
 
 document.addEventListener('DOMContentLoaded', () => {
     window.app = new NavigationApp();
+});
+```
+
 ### 6. [coord_picker.html](file:///d:/Programing%20class/github/IDT/IDPBL%20%281%29/IDPBL/coord_picker.html)
 Interactive helper page for locating pixel targets relative to floor images and copying the JS output directly into `buildingData.js`.
 
