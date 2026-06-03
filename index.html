@@ -31,11 +31,29 @@
                 <span>SmartNav</span>
             </div>
             
-            <div class="search-container">
-                <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                <input type="text" id="searchInput" placeholder="Search for a location..." autocomplete="off">
-                <button id="clearSearchBtn" class="clear-btn hidden"><i class="fa-solid fa-xmark"></i></button>
-                <div id="searchResults" class="search-dropdown hidden"></div>
+            <div class="search-container" id="searchContainer">
+                <!-- Search Destination Mode -->
+                <div class="search-box" id="searchBox">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" id="searchInput" placeholder="Search for a location..." autocomplete="off">
+                    <button id="clearSearchBtn" class="clear-btn hidden"><i class="fa-solid fa-xmark"></i></button>
+                    <div id="searchResults" class="search-dropdown hidden"></div>
+                </div>
+
+                <!-- Route Planning Mode (hidden initially) -->
+                <div class="route-box hidden" id="routeBox">
+                    <select id="startLocationSelect" class="route-select">
+                        <option value="">Start location...</option>
+                    </select>
+                    <i class="fa-solid fa-arrow-right-long route-arrow"></i>
+                    <div id="destBadge" class="dest-badge">Destination</div>
+                    <button id="navigateBtn" class="btn-navigate-top" title="Find Path">
+                        <i class="fa-solid fa-route"></i>
+                    </button>
+                    <button id="cancelNavBtn" class="btn-cancel-nav" title="Cancel">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
             </div>
 
             <div class="controls-container">
@@ -63,33 +81,7 @@
                     </div>
                 </div>
 
-                <!-- Floating Legend -->
-                <div class="floating-legend" id="legend">
-                    <h4>Legend</h4>
-                    <div class="legend-item"><span class="dot start"></span> Start Point</div>
-                    <div class="legend-item"><span class="dot end"></span> Destination</div>
-                    <div class="legend-item"><span class="line"></span> Path</div>
-                </div>
-            </div>
 
-            <!-- Left Panel: Location Info (Pops up when a location is selected) -->
-            <div id="locationPanel" class="side-panel left-panel hidden">
-                <button class="close-panel-btn" onclick="app.closeLocationPanel()"><i class="fa-solid fa-xmark"></i></button>
-                <div class="panel-tag">Destination</div>
-                <h3 id="locName">Room Name</h3>
-                <p id="locDetails" class="loc-details">Floor 1</p>
-                
-                <div class="start-selection">
-                    <label>Start from:</label>
-                    <select id="startLocationSelect" class="modern-select">
-                        <option value="">Select starting point...</option>
-                    </select>
-                </div>
-
-                <button id="navigateBtn" class="btn-navigate">
-                    <i class="fa-solid fa-route"></i> NAVIGATE
-                </button>
-                <div id="errorMsg" class="error-msg hidden"></div>
             </div>
 
             <!-- Right Panel: Navigation Steps (Pops up when navigating) -->
@@ -102,6 +94,9 @@
             </div>
         </main>
     </div>
+
+    <!-- Floating Error Toast -->
+    <div id="errorToast" class="error-toast hidden"></div>
 
     <script src="buildingData.js?v=12"></script>
     <script src="pathfinding.js?v=12"></script>

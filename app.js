@@ -38,6 +38,12 @@ class NavigationApp {
             introOverlay: document.getElementById('introOverlay'),
             startNavBtn: document.getElementById('startNavBtn'),
             
+            searchContainer: document.getElementById('searchContainer'),
+            searchBox: document.getElementById('searchBox'),
+            routeBox: document.getElementById('routeBox'),
+            destBadge: document.getElementById('destBadge'),
+            cancelNavBtn: document.getElementById('cancelNavBtn'),
+            
             searchInput: document.getElementById('searchInput'),
             clearSearchBtn: document.getElementById('clearSearchBtn'),
             searchResults: document.getElementById('searchResults'),
@@ -49,12 +55,9 @@ class NavigationApp {
             roomLabels: document.getElementById('roomLabels'),
             imageWrapper: document.getElementById('imageWrapper'),
             
-            locationPanel: document.getElementById('locationPanel'),
-            locName: document.getElementById('locName'),
-            locDetails: document.getElementById('locDetails'),
             startLocationSelect: document.getElementById('startLocationSelect'),
             navigateBtn: document.getElementById('navigateBtn'),
-            errorMsg: document.getElementById('errorMsg'),
+            errorToast: document.getElementById('errorToast'),
             
             stepsPanel: document.getElementById('stepsPanel'),
             pathSteps: document.getElementById('pathSteps')
@@ -221,11 +224,11 @@ class NavigationApp {
         this.elements.searchInput.addEventListener('focus', (e) => this.handleSearch(e.target.value));
         
         this.elements.clearSearchBtn.addEventListener('click', () => {
-            this.elements.searchInput.value = '';
-            this.elements.clearSearchBtn.classList.add('hidden');
-            this.elements.searchResults.classList.add('hidden');
-            this.closeLocationPanel();
-            this.clearPath();
+            this.resetSearch();
+        });
+
+        this.elements.cancelNavBtn.addEventListener('click', () => {
+            this.resetSearch();
         });
 
         // Hide dropdown when clicking outside
@@ -269,17 +272,19 @@ class NavigationApp {
 
     selectDestination(roomName) {
         this.selectedDestination = roomName;
-        this.elements.searchInput.value = roomName;
         this.elements.searchResults.classList.add('hidden');
         
         const roomData = getRoom(roomName);
         if (!roomData) return;
 
-        this.elements.locName.textContent = roomName;
-        this.elements.locDetails.innerHTML = `Floor ${roomData.floor}`;
-        
-        this.elements.locationPanel.classList.remove('hidden');
-        this.elements.errorMsg.classList.add('hidden');
+        // Transition top bar to Route Mode
+        this.elements.destBadge.textContent = roomName;
+        this.elements.searchBox.classList.add('hidden');
+        this.elements.routeBox.classList.remove('hidden');
+        this.elements.searchContainer.classList.add('route-mode');
+        this.elements.startLocationSelect.value = ''; // reset start point
+
+        this.hideError();
 
         // Switch to that floor so user sees where it is
         this.switchFloor(roomData.floor);
@@ -287,8 +292,24 @@ class NavigationApp {
         this.drawCurrentFloor();
     }
 
+    resetSearch() {
+        this.selectedDestination = null;
+        this.elements.searchInput.value = '';
+        this.elements.clearSearchBtn.classList.add('hidden');
+        this.elements.searchResults.classList.add('hidden');
+        
+        // Reset top bar to Search Mode
+        this.elements.searchContainer.classList.remove('route-mode');
+        this.elements.routeBox.classList.add('hidden');
+        this.elements.searchBox.classList.remove('hidden');
+        this.elements.startLocationSelect.value = '';
+        
+        this.hideError();
+        this.clearPath();
+    }
+
     closeLocationPanel() {
-        this.elements.locationPanel.classList.add('hidden');
+        this.resetSearch();
     }
 
     closeStepsPanel() {
@@ -329,12 +350,17 @@ class NavigationApp {
     }
 
     showError(msg) {
-        this.elements.errorMsg.textContent = msg;
-        this.elements.errorMsg.classList.remove('hidden');
+        this.elements.errorToast.textContent = msg;
+        this.elements.errorToast.classList.remove('hidden');
+        
+        if (this.errorTimeout) clearTimeout(this.errorTimeout);
+        this.errorTimeout = setTimeout(() => {
+            this.hideError();
+        }, 3000);
     }
 
     hideError() {
-        this.elements.errorMsg.classList.add('hidden');
+        this.elements.errorToast.classList.add('hidden');
     }
 
     displaySteps() {

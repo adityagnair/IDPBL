@@ -77,7 +77,7 @@ To construct realistic walking paths and avoid "wall clipping" (drawing lines di
 ## 📂 Source Code Index
 
 ### 1. [index.html](file:///d:/Programing%20class/github/IDT/IDPBL%20%281%29/IDPBL/index.html)
-The primary layout file containing the search bar, floor selectors, canvas viewer, legend, and dynamic navigation panels.
+The primary layout file containing the search bar, floor selectors, canvas viewer, and dynamic navigation panels.
 
 ```html
 <!DOCTYPE html>
@@ -113,11 +113,29 @@ The primary layout file containing the search bar, floor selectors, canvas viewe
                 <span>SmartNav</span>
             </div>
             
-            <div class="search-container">
-                <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                <input type="text" id="searchInput" placeholder="Search for a location..." autocomplete="off">
-                <button id="clearSearchBtn" class="clear-btn hidden"><i class="fa-solid fa-xmark"></i></button>
-                <div id="searchResults" class="search-dropdown hidden"></div>
+            <div class="search-container" id="searchContainer">
+                <!-- Search Destination Mode -->
+                <div class="search-box" id="searchBox">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" id="searchInput" placeholder="Search for a location..." autocomplete="off">
+                    <button id="clearSearchBtn" class="clear-btn hidden"><i class="fa-solid fa-xmark"></i></button>
+                    <div id="searchResults" class="search-dropdown hidden"></div>
+                </div>
+
+                <!-- Route Planning Mode (hidden initially) -->
+                <div class="route-box hidden" id="routeBox">
+                    <select id="startLocationSelect" class="route-select">
+                        <option value="">Start location...</option>
+                    </select>
+                    <i class="fa-solid fa-arrow-right-long route-arrow"></i>
+                    <div id="destBadge" class="dest-badge">Destination</div>
+                    <button id="navigateBtn" class="btn-navigate-top" title="Find Path">
+                        <i class="fa-solid fa-route"></i>
+                    </button>
+                    <button id="cancelNavBtn" class="btn-cancel-nav" title="Cancel">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
             </div>
 
             <div class="controls-container">
@@ -145,33 +163,7 @@ The primary layout file containing the search bar, floor selectors, canvas viewe
                     </div>
                 </div>
 
-                <!-- Floating Legend -->
-                <div class="floating-legend" id="legend">
-                    <h4>Legend</h4>
-                    <div class="legend-item"><span class="dot start"></span> Start Point</div>
-                    <div class="legend-item"><span class="dot end"></span> Destination</div>
-                    <div class="legend-item"><span class="line"></span> Path</div>
-                </div>
-            </div>
 
-            <!-- Left Panel: Location Info (Pops up when a location is selected) -->
-            <div id="locationPanel" class="side-panel left-panel hidden">
-                <button class="close-panel-btn" onclick="app.closeLocationPanel()"><i class="fa-solid fa-xmark"></i></button>
-                <div class="panel-tag">Destination</div>
-                <h3 id="locName">Room Name</h3>
-                <p id="locDetails" class="loc-details">Floor 1</p>
-                
-                <div class="start-selection">
-                    <label>Start from:</label>
-                    <select id="startLocationSelect" class="modern-select">
-                        <option value="">Select starting point...</option>
-                    </select>
-                </div>
-
-                <button id="navigateBtn" class="btn-navigate">
-                    <i class="fa-solid fa-route"></i> NAVIGATE
-                </button>
-                <div id="errorMsg" class="error-msg hidden"></div>
             </div>
 
             <!-- Right Panel: Navigation Steps (Pops up when navigating) -->
@@ -184,6 +176,9 @@ The primary layout file containing the search bar, floor selectors, canvas viewe
             </div>
         </main>
     </div>
+
+    <!-- Floating Error Toast -->
+    <div id="errorToast" class="error-toast hidden"></div>
 
     <script src="buildingData.js?v=12"></script>
     <script src="pathfinding.js?v=12"></script>
@@ -222,6 +217,10 @@ The application stylesheet controlling styling, responsiveness, typography, layo
     padding: 0;
     box-sizing: border-box;
     font-family: 'Outfit', sans-serif;
+}
+
+.hidden {
+    display: none !important;
 }
 
 body {
@@ -354,6 +353,159 @@ body {
     position: relative;
     width: 400px;
     max-width: 40%;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.search-container.route-mode {
+    width: 580px;
+    max-width: 60%;
+}
+
+.search-box {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+}
+
+.route-box {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    height: 100%;
+    background: #f4f6f8;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-pill);
+    padding: 6px 10px 6px 15px;
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.route-select {
+    flex: 1;
+    min-width: 130px;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    background: white;
+    color: var(--text-main);
+    font-family: 'Outfit', sans-serif;
+    font-weight: 600;
+    font-size: 0.90em;
+    outline: none;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: border-color 0.2s;
+}
+
+.route-select:focus {
+    border-color: var(--primary);
+}
+
+.route-arrow {
+    color: var(--text-muted);
+    font-size: 1.1em;
+    animation: pulseArrow 1.5s infinite;
+}
+
+@keyframes pulseArrow {
+    0%, 100% { transform: translateX(0); opacity: 0.6; }
+    50% { transform: translateX(4px); opacity: 1; }
+}
+
+.dest-badge {
+    padding: 8px 16px;
+    background: var(--end-color);
+    color: white;
+    font-weight: 700;
+    font-size: 0.9em;
+    border-radius: var(--radius-pill);
+    box-shadow: 0 4px 10px rgba(247, 37, 133, 0.25);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+}
+
+.btn-navigate-top {
+    width: 36px;
+    height: 36px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3);
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.btn-navigate-top:hover {
+    background: var(--primary-hover);
+    transform: scale(1.08);
+    box-shadow: 0 6px 15px rgba(67, 97, 238, 0.4);
+}
+
+.btn-cancel-nav {
+    width: 36px;
+    height: 36px;
+    background: transparent;
+    color: var(--text-muted);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.btn-cancel-nav:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--end-color);
+}
+
+/* ================== FLOATING ERROR TOAST ================== */
+.error-toast {
+    position: fixed;
+    top: 95px;
+    left: 50%;
+    transform: translateX(-50%) translateY(0);
+    background: #ffebee;
+    color: #c62828;
+    padding: 12px 24px;
+    border-radius: var(--radius-pill);
+    box-shadow: var(--shadow-md);
+    font-weight: 600;
+    font-size: 0.95em;
+    z-index: 10000;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid rgba(198, 40, 40, 0.2);
+}
+
+.error-toast::before {
+    content: '\f06a';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    color: #c62828;
+}
+
+.error-toast.hidden {
+    transform: translateX(-50%) translateY(-150px);
+    opacity: 0;
+    pointer-events: none;
 }
 
 .search-container input {
@@ -582,53 +734,7 @@ body {
     transform: translate(-50%, -50%) scale(1.1);
 }
 
-/* ================== FLOATING LEGEND ================== */
-.floating-legend {
-    position: absolute;
-    bottom: 30px;
-    right: 30px;
-    background: var(--surface);
-    padding: 20px;
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-md);
-    z-index: 50;
-    pointer-events: none;
-}
 
-.floating-legend h4 {
-    margin-bottom: 15px;
-    font-weight: 700;
-    color: var(--text-main);
-    font-size: 1.1em;
-}
-
-.legend-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 10px;
-    font-size: 0.9em;
-    font-weight: 500;
-    color: var(--text-muted);
-}
-
-.legend-item:last-child { margin-bottom: 0; }
-
-.dot {
-    width: 12px; height: 12px;
-    border-radius: 50%;
-    display: inline-block;
-}
-
-.dot.start { background: var(--start-color); }
-.dot.end { background: var(--end-color); }
-
-.line {
-    width: 20px; height: 4px;
-    background: var(--primary);
-    border-radius: 2px;
-    display: inline-block;
-}
 
 /* ================== SIDE PANELS ================== */
 .side-panel {
@@ -833,7 +939,6 @@ body {
     .side-panel { width: calc(100% - 40px); left: 20px; right: 20px; }
     .left-panel { top: 20px; }
     .right-panel { top: auto; bottom: 20px; max-height: 50vh; }
-    .floating-legend { display: none; }
 }
 ```
 
@@ -1535,6 +1640,12 @@ class NavigationApp {
             introOverlay: document.getElementById('introOverlay'),
             startNavBtn: document.getElementById('startNavBtn'),
             
+            searchContainer: document.getElementById('searchContainer'),
+            searchBox: document.getElementById('searchBox'),
+            routeBox: document.getElementById('routeBox'),
+            destBadge: document.getElementById('destBadge'),
+            cancelNavBtn: document.getElementById('cancelNavBtn'),
+            
             searchInput: document.getElementById('searchInput'),
             clearSearchBtn: document.getElementById('clearSearchBtn'),
             searchResults: document.getElementById('searchResults'),
@@ -1546,12 +1657,9 @@ class NavigationApp {
             roomLabels: document.getElementById('roomLabels'),
             imageWrapper: document.getElementById('imageWrapper'),
             
-            locationPanel: document.getElementById('locationPanel'),
-            locName: document.getElementById('locName'),
-            locDetails: document.getElementById('locDetails'),
             startLocationSelect: document.getElementById('startLocationSelect'),
             navigateBtn: document.getElementById('navigateBtn'),
-            errorMsg: document.getElementById('errorMsg'),
+            errorToast: document.getElementById('errorToast'),
             
             stepsPanel: document.getElementById('stepsPanel'),
             pathSteps: document.getElementById('pathSteps')
@@ -1710,11 +1818,11 @@ class NavigationApp {
         this.elements.searchInput.addEventListener('focus', (e) => this.handleSearch(e.target.value));
         
         this.elements.clearSearchBtn.addEventListener('click', () => {
-            this.elements.searchInput.value = '';
-            this.elements.clearSearchBtn.classList.add('hidden');
-            this.elements.searchResults.classList.add('hidden');
-            this.closeLocationPanel();
-            this.clearPath();
+            this.resetSearch();
+        });
+
+        this.elements.cancelNavBtn.addEventListener('click', () => {
+            this.resetSearch();
         });
 
         document.addEventListener('click', (e) => {
@@ -1756,25 +1864,44 @@ class NavigationApp {
 
     selectDestination(roomName) {
         this.selectedDestination = roomName;
-        this.elements.searchInput.value = roomName;
         this.elements.searchResults.classList.add('hidden');
         
         const roomData = getRoom(roomName);
         if (!roomData) return;
 
-        this.elements.locName.textContent = roomName;
-        this.elements.locDetails.innerHTML = `Floor ${roomData.floor}`;
-        
-        this.elements.locationPanel.classList.remove('hidden');
-        this.elements.errorMsg.classList.add('hidden');
+        // Transition top bar to Route Mode
+        this.elements.destBadge.textContent = roomName;
+        this.elements.searchBox.classList.add('hidden');
+        this.elements.routeBox.classList.remove('hidden');
+        this.elements.searchContainer.classList.add('route-mode');
+        this.elements.startLocationSelect.value = ''; // reset start point
 
+        this.hideError();
+
+        // Switch to that floor so user sees where it is
         this.switchFloor(roomData.floor);
-        this.clearPath();
+        this.clearPath(); // Clear any existing path
         this.drawCurrentFloor();
     }
 
+    resetSearch() {
+        this.selectedDestination = null;
+        this.elements.searchInput.value = '';
+        this.elements.clearSearchBtn.classList.add('hidden');
+        this.elements.searchResults.classList.add('hidden');
+        
+        // Reset top bar to Search Mode
+        this.elements.searchContainer.classList.remove('route-mode');
+        this.elements.routeBox.classList.add('hidden');
+        this.elements.searchBox.classList.remove('hidden');
+        this.elements.startLocationSelect.value = '';
+        
+        this.hideError();
+        this.clearPath();
+    }
+
     closeLocationPanel() {
-        this.elements.locationPanel.classList.add('hidden');
+        this.resetSearch();
     }
 
     closeStepsPanel() {
@@ -1807,6 +1934,7 @@ class NavigationApp {
         this.hideError();
         this.displaySteps();
         
+        // Go to start floor
         const startRoom = getRoom(start);
         if (startRoom) {
             this.switchFloor(startRoom.floor);
@@ -1814,12 +1942,17 @@ class NavigationApp {
     }
 
     showError(msg) {
-        this.elements.errorMsg.textContent = msg;
-        this.elements.errorMsg.classList.remove('hidden');
+        this.elements.errorToast.textContent = msg;
+        this.elements.errorToast.classList.remove('hidden');
+        
+        if (this.errorTimeout) clearTimeout(this.errorTimeout);
+        this.errorTimeout = setTimeout(() => {
+            this.hideError();
+        }, 3000);
     }
 
     hideError() {
-        this.elements.errorMsg.classList.add('hidden');
+        this.elements.errorToast.classList.add('hidden');
     }
 
     displaySteps() {
