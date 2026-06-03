@@ -2,7 +2,7 @@ const BUILDING_DATA = {
     1: {
         name: "Floor 1",
         rooms: {
-            "Evaluation Canter": { x: 315, y: 288, floor: 1 },
+            "Evaluation Center": { x: 315, y: 288, floor: 1 },
             "Examination Evaluation Center - 1": { x: 1072, y: 284, floor: 1 },
             "IT Room": { x: 1118, y: 624, floor: 1 },
             "Chief Proctor Office": { x: 1120, y: 761, floor: 1 },
