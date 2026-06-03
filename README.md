@@ -2,6 +2,8 @@
 
 SmartNav is a lightweight, interactive, client-side indoor navigation system designed for multi-floor buildings. Using custom coordinate mapping and pathfinding algorithms, it helps users locate rooms and guides them step-by-step through corridors, staircases, and elevators.
 
+[![Live Demo](https://img.shields.io/badge/Demo-idpbl.vercel.app-blueviolet?style=for-the-badge&logo=vercel)](https://idpbl.vercel.app)
+
 ---
 
 ## 🛠️ Tech Stack
@@ -55,19 +57,27 @@ The application is built entirely using vanilla web technologies, requiring no c
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Getting Started & Deployment
 
-Since the project is completely serverless and dependency-free, it doesn't use package managers (like npm or pip). You can run it locally in seconds:
+Since the project is completely serverless and dependency-free, it doesn't use package managers (like npm or pip). You can run it locally or deploy it to Vercel in seconds:
 
-### Option A: Local File System (Double-click)
+### Running Locally
+#### Option A: Local File System (Double-click)
 1. Clone or download this repository.
 2. Double-click the [index.html](file:///d:/Programing%20class/github/IDT/IDPBL%20%281%29/IDPBL/index.html) file to open the application directly in your web browser.
 
-### Option B: Local Web Server (Recommended)
+#### Option B: Local Web Server (Recommended)
 To prevent local CORS warnings in some browsers when loading assets:
 *   **Python:** Run `python -m http.server 8000` in the directory, then visit `http://localhost:8000`.
 *   **Node.js:** Run `npx serve` or install `live-server`, then navigate to the hosted port.
 *   **VS Code:** Install the **Live Server** extension and click **Go Live**.
+
+### Deploying to Vercel
+This project is configured for single-click deployment on [Vercel](https://vercel.com/):
+1. Create a free Vercel account.
+2. Install the Vercel CLI via `npm i -g vercel` or link your GitHub repository to Vercel.
+3. Run the command `vercel` in your project root, select the default options, and your site will be live at a custom URL (e.g., `idpbl.vercel.app`).
+4. Since this is a static site with no build steps required, the build configuration is automatically set to "Other" or "Static HTML".
 
 ---
 
@@ -144,6 +154,16 @@ To customize or expand this mapping system for your own buildings:
 
 ---
 
+## 👥 Contributors & Credits
+
+This project was built and is maintained by:
+*   **Aditya G Nair**
+*   **Akula Vaenkata Saye Chandan**
+*   **B. Gayathri Prajwal**
+*   **Guthikonda Navatej**
+
+---
+
 ## 📜 License
 
-This project is open-source and released under the [MIT License](https://opensource.org/licenses/MIT).
+This project is open-source and released under the [MIT License](LICENSE).
