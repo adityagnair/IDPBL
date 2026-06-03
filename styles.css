@@ -717,7 +717,7 @@ body.dark-mode .theme-toggle-btn:hover {
 }
 
 body.dark-mode .floor-viewer img {
-    filter: invert(0.9) hue-rotate(180deg) brightness(0.85) contrast(1.1);
+    filter: invert(1) hue-rotate(180deg) brightness(1.15) contrast(1.3);
 }
 
 .image-wrapper {

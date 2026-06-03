@@ -950,7 +950,7 @@ body.dark-mode .theme-toggle-btn:hover {
 }
 
 body.dark-mode .floor-viewer img {
-    filter: invert(0.9) hue-rotate(180deg) brightness(0.85) contrast(1.1);
+    filter: invert(1) hue-rotate(180deg) brightness(1.15) contrast(1.3);
 }
 
 .image-wrapper {
@@ -2028,6 +2028,8 @@ class NavigationApp {
         const body = document.body;
         const btnIcon = this.elements.themeToggleBtn ? this.elements.themeToggleBtn.querySelector('i') : null;
         
+        this.pathColor = this.theme === 'dark' ? '#4cc9f0' : 'rgba(67, 97, 238, 0.9)';
+
         if (this.theme === 'dark') {
             body.classList.add('dark-mode');
             if (btnIcon) {
@@ -2054,6 +2056,7 @@ class NavigationApp {
         if (body.classList.contains('dark-mode')) {
             body.classList.remove('dark-mode');
             this.theme = 'light';
+            this.pathColor = 'rgba(67, 97, 238, 0.9)';
             if (btnIcon) {
                 btnIcon.className = 'fa-solid fa-moon';
             }
@@ -2063,6 +2066,7 @@ class NavigationApp {
         } else {
             body.classList.add('dark-mode');
             this.theme = 'dark';
+            this.pathColor = '#4cc9f0';
             if (btnIcon) {
                 btnIcon.className = 'fa-solid fa-sun';
             }
@@ -2625,7 +2629,7 @@ class NavigationApp {
         }
 
         // Draw line
-        ctx.strokeStyle = 'rgba(67, 97, 238, 0.9)';
+        ctx.strokeStyle = this.pathColor || 'rgba(67, 97, 238, 0.9)';
         ctx.lineWidth = 6;
         ctx.lineCap  = 'round';
         ctx.lineJoin = 'round';
@@ -2653,12 +2657,12 @@ class NavigationApp {
             ctx.arc(x, y, 14, 0, 2 * Math.PI);
             ctx.fillStyle = isStart ? 'rgba(76,175,80,0.3)'
                                : isEnd   ? 'rgba(247,37,133,0.3)'
-                                         : 'rgba(67,97,238,0.2)';
+                                         : (this.theme === 'dark' ? 'rgba(76, 201, 240, 0.3)' : 'rgba(67,97,238,0.2)');
             ctx.fill();
 
             ctx.beginPath();
             ctx.arc(x, y, 8, 0, 2 * Math.PI);
-            ctx.fillStyle = isStart ? '#4caf50' : isEnd ? '#f72585' : '#4361ee';
+            ctx.fillStyle = isStart ? '#4caf50' : isEnd ? '#f72585' : (this.theme === 'dark' ? '#4cc9f0' : '#4361ee');
             ctx.fill();
             ctx.strokeStyle = 'white';
             ctx.lineWidth = 3;
