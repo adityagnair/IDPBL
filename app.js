@@ -59,6 +59,9 @@ class NavigationApp {
             navigateBtn: document.getElementById('navigateBtn'),
             errorToast: document.getElementById('errorToast'),
             
+            menuBtn: document.getElementById('menuBtn'),
+            dropdownMenu: document.getElementById('dropdownMenu'),
+            
             stepsPanel: document.getElementById('stepsPanel'),
             pathSteps: document.getElementById('pathSteps')
         };
@@ -231,10 +234,21 @@ class NavigationApp {
             this.resetSearch();
         });
 
-        // Hide dropdown when clicking outside
+        // Menu toggling
+        if (this.elements.menuBtn && this.elements.dropdownMenu) {
+            this.elements.menuBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.elements.dropdownMenu.classList.toggle('hidden');
+            });
+        }
+
+        // Hide dropdowns when clicking outside
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.search-container')) {
                 this.elements.searchResults.classList.add('hidden');
+            }
+            if (this.elements.dropdownMenu && !e.target.closest('.menu-container')) {
+                this.elements.dropdownMenu.classList.add('hidden');
             }
         });
 

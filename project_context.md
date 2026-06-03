@@ -147,7 +147,30 @@ The primary layout file containing the search bar, floor selectors, canvas viewe
                     <button class="floor-btn" data-floor="4">4</button>
                     <button class="floor-btn" data-floor="5">5</button>
                 </div>
-                <button class="menu-btn"><i class="fa-solid fa-bars"></i></button>
+                <div class="menu-container">
+                    <button class="menu-btn" id="menuBtn" title="Menu"><i class="fa-solid fa-bars"></i></button>
+                    <div class="dropdown-menu hidden" id="dropdownMenu">
+                        <div class="dropdown-header">SmartNav Info</div>
+                        <a href="https://github.com/adityagnair/IDPBL" target="_blank" class="dropdown-item">
+                            <i class="fa-brands fa-github"></i> GitHub Repository
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <div class="credits-section">
+                            <span class="credits-title">Contributors</span>
+                            <ul class="credits-list">
+                                <li>Aditya G Nair</li>
+                                <li>Akula Vaenkata Saye Chandan</li>
+                                <li>B. Gayathri Prajwal</li>
+                                <li>Guthikonda Navatej</li>
+                            </ul>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <div class="license-section">
+                            <span class="credits-title">License</span>
+                            <span class="license-type"><i class="fa-solid fa-scale-balanced"></i> MIT License</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </header>
 
@@ -639,6 +662,136 @@ body {
     font-size: 1.4em;
     color: var(--text-main);
     cursor: pointer;
+}
+
+/* ================== MENU DROPDOWN ================== */
+.menu-container {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 50px;
+    right: 0;
+    width: 280px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    animation: menuFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes menuFadeIn {
+    from { opacity: 0; transform: translateY(-10px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.dropdown-menu.hidden {
+    display: none;
+}
+
+.dropdown-header {
+    font-size: 0.85em;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--primary);
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    color: var(--text-main);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95em;
+    border-radius: var(--radius-sm);
+    transition: all 0.2s;
+}
+
+.dropdown-item:hover {
+    background: rgba(67, 97, 238, 0.08);
+    color: var(--primary);
+}
+
+.dropdown-item i {
+    font-size: 1.25em;
+}
+
+.dropdown-divider {
+    height: 1px;
+    background: var(--border);
+}
+
+.credits-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.credits-title {
+    font-size: 0.8em;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.credits-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.credits-list li {
+    font-size: 0.9em;
+    font-weight: 500;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.credits-list li::before {
+    content: "\f007";
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    font-size: 0.8em;
+    color: var(--primary);
+    opacity: 0.7;
+}
+
+.license-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.license-type {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.license-type i {
+    color: var(--primary);
+    opacity: 0.8;
 }
 
 /* ================== MAIN CONTENT ================== */
@@ -1661,6 +1814,9 @@ class NavigationApp {
             navigateBtn: document.getElementById('navigateBtn'),
             errorToast: document.getElementById('errorToast'),
             
+            menuBtn: document.getElementById('menuBtn'),
+            dropdownMenu: document.getElementById('dropdownMenu'),
+            
             stepsPanel: document.getElementById('stepsPanel'),
             pathSteps: document.getElementById('pathSteps')
         };
@@ -1825,12 +1981,25 @@ class NavigationApp {
             this.resetSearch();
         });
 
+        // Menu toggling
+        if (this.elements.menuBtn && this.elements.dropdownMenu) {
+            this.elements.menuBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.elements.dropdownMenu.classList.toggle('hidden');
+            });
+        }
+
+        // Hide dropdowns when clicking outside
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.search-container')) {
                 this.elements.searchResults.classList.add('hidden');
             }
+            if (this.elements.dropdownMenu && !e.target.closest('.menu-container')) {
+                this.elements.dropdownMenu.classList.add('hidden');
+            }
         });
 
+        // Navigate
         this.elements.navigateBtn.addEventListener('click', () => this.startNavigation());
     }
 

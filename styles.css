@@ -446,6 +446,136 @@ body {
     cursor: pointer;
 }
 
+/* ================== MENU DROPDOWN ================== */
+.menu-container {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 50px;
+    right: 0;
+    width: 280px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    animation: menuFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes menuFadeIn {
+    from { opacity: 0; transform: translateY(-10px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.dropdown-menu.hidden {
+    display: none;
+}
+
+.dropdown-header {
+    font-size: 0.85em;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--primary);
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    color: var(--text-main);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95em;
+    border-radius: var(--radius-sm);
+    transition: all 0.2s;
+}
+
+.dropdown-item:hover {
+    background: rgba(67, 97, 238, 0.08);
+    color: var(--primary);
+}
+
+.dropdown-item i {
+    font-size: 1.25em;
+}
+
+.dropdown-divider {
+    height: 1px;
+    background: var(--border);
+}
+
+.credits-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.credits-title {
+    font-size: 0.8em;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.credits-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.credits-list li {
+    font-size: 0.9em;
+    font-weight: 500;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.credits-list li::before {
+    content: "\f007";
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    font-size: 0.8em;
+    color: var(--primary);
+    opacity: 0.7;
+}
+
+.license-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.license-type {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.license-type i {
+    color: var(--primary);
+    opacity: 0.8;
+}
+
 /* ================== MAIN CONTENT ================== */
 .main-content {
     flex: 1;
